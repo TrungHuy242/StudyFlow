@@ -38,6 +38,8 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
   TimeOfDay _endTime = const TimeOfDay(hour: 9, minute: 30);
   String _type = 'Lý thuyết';
 
+  bool get _isEditing => widget.scheduleId != null;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -69,12 +71,27 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
       _startTime = DateTimeUtils.parseTimeOfDay(schedule.startTime);
       _endTime = DateTimeUtils.parseTimeOfDay(schedule.endTime);
       _roomController.text = schedule.room;
-      _type = schedule.type;
+      _type = _displayType(schedule.type);
     } else if (subjects.isNotEmpty) {
       _selectedSubjectId = subjects.first.id;
     }
 
     return _ScheduleEditorData(subjects: subjects, schedule: schedule);
+  }
+
+  String _displayType(String value) {
+    switch (value.toLowerCase()) {
+      case 'lecture':
+      case 'lý thuyết':
+        return 'Lý thuyết';
+      case 'practice':
+      case 'thực hành':
+        return 'Thực hành';
+      case 'seminar':
+        return 'Seminar';
+      default:
+        return value;
+    }
   }
 
   Future<void> _pickTime({required bool isStart}) async {
@@ -136,13 +153,48 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
     context.pop(true);
   }
 
+  InputDecoration _fieldDecoration({String? hintText}) {
+    return InputDecoration(
+      hintText: hintText,
+      filled: true,
+      fillColor: StudyFlowPalette.surfaceSoft,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: const BorderSide(color: StudyFlowPalette.blue),
+      ),
+    );
+  }
+
+  String _weekdayChip(int weekday) {
+    const List<String> labels = <String>[
+      'T2',
+      'T3',
+      'T4',
+      'T5',
+      'T6',
+      'T7',
+      'CN'
+    ];
+    return labels[weekday - 1];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: FutureBuilder<_ScheduleEditorData>(
         future: _future,
-        builder: (BuildContext context, AsyncSnapshot<_ScheduleEditorData> snapshot) {
+        builder: (BuildContext context,
+            AsyncSnapshot<_ScheduleEditorData> snapshot) {
           final _ScheduleEditorData? data = snapshot.data;
           if (data == null || data.subjects.isEmpty) {
             return const SizedBox.shrink();
@@ -150,12 +202,47 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
           return SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(22, 14, 22, 18),
-              child: StudyFlowGradientButton(
-                label: widget.scheduleId == null ? 'Thêm lịch học' : 'Cập nhật lịch học',
-                icon: Icons.add_rounded,
-                onTap: _saving ? null : () => _submit(data),
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: _isEditing
+                  ? Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: SizedBox(
+                            height: 54,
+                            child: OutlinedButton(
+                              onPressed: _saving ? null : () => context.pop(),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(
+                                    color: StudyFlowPalette.blue),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: const Text(
+                                'Hủy',
+                                style: TextStyle(
+                                  color: StudyFlowPalette.blue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: StudyFlowGradientButton(
+                            label: 'Lưu',
+                            onTap: _saving ? null : () => _submit(data),
+                            height: 54,
+                          ),
+                        ),
+                      ],
+                    )
+                  : StudyFlowGradientButton(
+                      label: 'Thêm lịch học',
+                      onTap: _saving ? null : () => _submit(data),
+                      height: 54,
+                    ),
             ),
           );
         },
@@ -163,12 +250,14 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
       body: SafeArea(
         child: FutureBuilder<_ScheduleEditorData>(
           future: _future,
-          builder: (BuildContext context, AsyncSnapshot<_ScheduleEditorData> snapshot) {
+          builder: (BuildContext context,
+              AsyncSnapshot<_ScheduleEditorData> snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            final _ScheduleEditorData data = snapshot.data ?? const _ScheduleEditorData();
+            final _ScheduleEditorData data =
+                snapshot.data ?? const _ScheduleEditorData();
             if (data.subjects.isEmpty) {
               return _ScheduleMissingSubjects(
                 onBack: () => context.pop(),
@@ -179,31 +268,44 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
             return Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
                 children: <Widget>[
                   Row(
                     children: <Widget>[
                       StudyFlowCircleIconButton(
-                        icon: Icons.arrow_back_ios_new_rounded,
+                        icon: Icons.arrow_back_rounded,
+                        size: 42,
                         onTap: () => context.pop(),
                       ),
                       Expanded(
                         child: Text(
-                          widget.scheduleId == null ? 'Thêm lịch học' : 'Sửa lịch học',
+                          _isEditing ? 'Sửa lịch học' : 'Thêm lịch học',
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleLarge,
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: const Color(0xFF0F172A),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 18,
+                                  ),
                         ),
                       ),
-                      const SizedBox(width: 40),
+                      const SizedBox(width: 42),
                     ],
                   ),
-                  const SizedBox(height: 30),
-                  Text('Môn học', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 28),
+                  Text(
+                    'Môn học',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF334155),
+                          fontSize: 14,
+                        ),
+                  ),
+                  const SizedBox(height: 10),
                   DropdownButtonFormField<int>(
                     initialValue: _selectedSubjectId,
-                    icon: const Icon(Icons.expand_more_rounded, color: StudyFlowPalette.textMuted),
-                    decoration: _fieldDecoration(),
+                    icon: const Icon(Icons.expand_more_rounded,
+                        color: StudyFlowPalette.textMuted),
+                    decoration: _fieldDecoration(hintText: 'Chọn môn học'),
                     items: data.subjects
                         .where((SubjectModel subject) => subject.id != null)
                         .map((SubjectModel subject) {
@@ -218,12 +320,18 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
                       });
                     },
                   ),
-                  const SizedBox(height: 20),
-                  Text('Ngày trong tuần', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 22),
+                  Text(
+                    'Ngày trong tuần',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF334155),
+                          fontSize: 14,
+                        ),
+                  ),
                   const SizedBox(height: 12),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: 10,
+                    runSpacing: 10,
                     children: List<Widget>.generate(7, (int index) {
                       final int weekday = index + 1;
                       final bool selected = _selectedWeekday == weekday;
@@ -236,16 +344,21 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
                           width: 40,
-                          height: 44,
+                          height: 40,
                           decoration: BoxDecoration(
-                            color: selected ? StudyFlowPalette.blue : StudyFlowPalette.surfaceSoft,
+                            color: selected
+                                ? StudyFlowPalette.blue
+                                : StudyFlowPalette.surfaceSoft,
                             borderRadius: BorderRadius.circular(14),
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             _weekdayChip(weekday),
                             style: TextStyle(
-                              color: selected ? Colors.white : StudyFlowPalette.textSecondary,
+                              color: selected
+                                  ? Colors.white
+                                  : const Color(0xFF475569),
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -253,7 +366,7 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
                       );
                     }),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 22),
                   Row(
                     children: <Widget>[
                       Expanded(
@@ -263,7 +376,7 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
                           onTap: () => _pickTime(isStart: true),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: _TimeField(
                           label: 'Giờ kết thúc',
@@ -273,21 +386,43 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  StudyFlowInput(
-                    controller: _roomController,
-                    label: 'Phòng học',
-                    hintText: 'VD: A301',
-                    prefixIcon: Icons.location_on_outlined,
+                  const SizedBox(height: 22),
+                  Text(
+                    'Phòng học',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF334155),
+                          fontSize: 14,
+                        ),
                   ),
-                  const SizedBox(height: 20),
-                  Text('Hình thức', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _roomController,
+                    decoration: _fieldDecoration(hintText: 'VD: A301'),
+                    validator: (String? value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Vui lòng nhập phòng học.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 22),
+                  Text(
+                    'Hình thức',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF334155),
+                          fontSize: 14,
+                        ),
+                  ),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 10,
                     runSpacing: 10,
                     children: <Widget>[
-                      for (final String option in const <String>['Lý thuyết', 'Thực hành', 'Seminar'])
+                      for (final String option in const <String>[
+                        'Lý thuyết',
+                        'Thực hành',
+                        'Seminar',
+                      ])
                         GestureDetector(
                           onTap: () {
                             setState(() {
@@ -295,10 +430,12 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
                             });
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
                               color: _type == option
-                                  ? StudyFlowPalette.blue.withValues(alpha: 0.12)
+                                  ? StudyFlowPalette.blue
+                                      .withValues(alpha: 0.12)
                                   : StudyFlowPalette.surfaceSoft,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
@@ -328,31 +465,6 @@ class _ScheduleEditorPageState extends State<ScheduleEditorPage> {
       ),
     );
   }
-
-  InputDecoration _fieldDecoration() {
-    return InputDecoration(
-      filled: true,
-      fillColor: StudyFlowPalette.surfaceSoft,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
-        borderSide: const BorderSide(color: StudyFlowPalette.blue),
-      ),
-    );
-  }
-
-  String _weekdayChip(int weekday) {
-    const List<String> labels = <String>['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-    return labels[weekday - 1];
-  }
 }
 
 class _TimeField extends StatelessWidget {
@@ -371,13 +483,19 @@ class _TimeField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(label, style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 12),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF334155),
+                fontSize: 14,
+              ),
+        ),
+        const SizedBox(height: 10),
         InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(18),
           child: Ink(
-            height: 52,
+            height: 56,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: StudyFlowPalette.surfaceSoft,
@@ -385,9 +503,13 @@ class _TimeField extends StatelessWidget {
             ),
             child: Row(
               children: <Widget>[
-                const Icon(Icons.schedule_rounded, size: 18, color: StudyFlowPalette.textMuted),
-                const SizedBox(width: 10),
-                Text(value, style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: const Color(0xFF0F172A),
+                        fontSize: 16,
+                      ),
+                ),
               ],
             ),
           ),
@@ -409,37 +531,57 @@ class _ScheduleMissingSubjects extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           StudyFlowCircleIconButton(
-            icon: Icons.arrow_back_ios_new_rounded,
+            icon: Icons.arrow_back_rounded,
+            size: 42,
             onTap: onBack,
           ),
           const Spacer(),
-          const Center(
-            child: StudyFlowIconBadge(
-              icon: Icons.menu_book_rounded,
-              backgroundColor: Color(0xFFF0F5FD),
-              foregroundColor: Color(0xFFAABBD2),
-              size: 80,
-              iconSize: 34,
-              borderRadius: 26,
+          Center(
+            child: Container(
+              width: 92,
+              height: 92,
+              decoration: BoxDecoration(
+                color: StudyFlowPalette.surfaceSoft,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: const Icon(
+                Icons.menu_book_rounded,
+                color: Color(0xFF94A3B8),
+                size: 40,
+              ),
             ),
           ),
-          const SizedBox(height: 20),
-          Center(child: Text('Chưa có môn học', style: Theme.of(context).textTheme.titleLarge)),
+          const SizedBox(height: 22),
+          Center(
+            child: Text(
+              'Chưa có môn học',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: const Color(0xFF0F172A),
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
           const SizedBox(height: 10),
           Center(
             child: Text(
               'Tạo ít nhất một môn học trước khi thêm lịch học.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF64748B),
+                    height: 1.5,
+                  ),
             ),
           ),
           const SizedBox(height: 24),
-          StudyFlowGradientButton(label: 'Thêm môn học', onTap: onCreateSubject),
+          StudyFlowGradientButton(
+            label: 'Thêm môn học',
+            onTap: onCreateSubject,
+          ),
           const Spacer(),
         ],
       ),

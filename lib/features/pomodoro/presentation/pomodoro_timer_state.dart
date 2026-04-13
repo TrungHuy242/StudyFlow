@@ -17,6 +17,14 @@ class PomodoroTimerState {
   final int completedFocusSessions;
   final int? selectedSubjectId;
 
+  bool get isFocusPhase => phase == PomodoroPhase.focus;
+
+  bool get isBreakPhase => !isFocusPhase;
+
+  bool get hasStartedCurrentPhase => remainingSeconds < totalSeconds;
+
+  bool get canResume => !isRunning && hasStartedCurrentPhase;
+
   String get phaseLabel {
     switch (phase) {
       case PomodoroPhase.focus:
@@ -48,7 +56,8 @@ class PomodoroTimerState {
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
       totalSeconds: totalSeconds ?? this.totalSeconds,
       isRunning: isRunning ?? this.isRunning,
-      completedFocusSessions: completedFocusSessions ?? this.completedFocusSessions,
+      completedFocusSessions:
+          completedFocusSessions ?? this.completedFocusSessions,
       selectedSubjectId: selectedSubjectId ?? this.selectedSubjectId,
     );
   }

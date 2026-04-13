@@ -1,4 +1,4 @@
-﻿// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -73,52 +73,67 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<_DashboardData> _loadDashboard() async {
-    final SemesterModel? activeSemester = await _semesterRepository.getActiveSemester();
+    final SemesterModel? activeSemester =
+        await _semesterRepository.getActiveSemester();
     final List<SubjectModel> subjects = await _subjectRepository.getSubjects();
-    final List<ScheduleModel> schedules = await _scheduleRepository.getSchedules();
-    final List<DeadlineModel> deadlines = await _deadlineRepository.getDeadlines();
+    final List<ScheduleModel> schedules =
+        await _scheduleRepository.getSchedules();
+    final List<DeadlineModel> deadlines =
+        await _deadlineRepository.getDeadlines();
     final List<StudyPlanModel> plans = await _studyPlanRepository.getPlans();
-    final List<PomodoroSessionModel> sessions = await _pomodoroRepository.getSessions();
+    final List<PomodoroSessionModel> sessions =
+        await _pomodoroRepository.getSessions();
 
     final DateTime now = DateTime.now();
     final DateTime today = DateTime(now.year, now.month, now.day);
-    final List<ScheduleModel> todaySchedule =
-        schedules.where((ScheduleModel item) => item.weekday == now.weekday).toList()
-          ..sort((ScheduleModel a, ScheduleModel b) => a.startTime.compareTo(b.startTime));
+    final List<ScheduleModel> todaySchedule = schedules
+        .where((ScheduleModel item) => item.weekday == now.weekday)
+        .toList()
+      ..sort((ScheduleModel a, ScheduleModel b) =>
+          a.startTime.compareTo(b.startTime));
     final List<DeadlineModel> upcomingDeadlines = deadlines
-        .where((DeadlineModel item) => !item.isDone && !item.dueAt.isBefore(today))
+        .where(
+            (DeadlineModel item) => !item.isDone && !item.dueAt.isBefore(today))
         .toList()
       ..sort((DeadlineModel a, DeadlineModel b) => a.dueAt.compareTo(b.dueAt));
     final List<StudyPlanModel> todayPlans = plans.where((StudyPlanModel item) {
-      final DateTime date = DateTime(item.planDate.year, item.planDate.month, item.planDate.day);
+      final DateTime date =
+          DateTime(item.planDate.year, item.planDate.month, item.planDate.day);
       return date == today;
     }).toList();
     final int focusMinutesToday = sessions
         .where((PomodoroSessionModel session) {
-          final DateTime date = DateTime(
-            session.sessionDate.year,
-            session.sessionDate.month,
-            session.sessionDate.day,
-          );
-          return session.type == 'Focus' && date == today;
-        })
-        .fold<int>(0, (int sum, PomodoroSessionModel item) => sum + item.duration);
+      final DateTime date = DateTime(
+        session.sessionDate.year,
+        session.sessionDate.month,
+        session.sessionDate.day,
+      );
+      return session.type == 'Focus' && date == today;
+    }).fold<int>(
+            0, (int sum, PomodoroSessionModel item) => sum + item.duration);
 
-    final Map<String, List<DeadlineModel>> grouped = <String, List<DeadlineModel>>{};
+    final Map<String, List<DeadlineModel>> grouped =
+        <String, List<DeadlineModel>>{};
     for (final DeadlineModel item in deadlines) {
-      final String key = item.subjectName?.isNotEmpty == true ? item.subjectName! : item.title;
+      final String key =
+          item.subjectName?.isNotEmpty == true ? item.subjectName! : item.title;
       grouped.putIfAbsent(key, () => <DeadlineModel>[]).add(item);
     }
 
-    final List<_SubjectProgress> progress = subjects.map((SubjectModel subject) {
-      final List<DeadlineModel> items = grouped[subject.name] ?? <DeadlineModel>[];
+    final List<_SubjectProgress> progress = subjects
+        .map((SubjectModel subject) {
+      final List<DeadlineModel> items =
+          grouped[subject.name] ?? <DeadlineModel>[];
       final int average = items.isEmpty
           ? 0
-          : items.fold<int>(0, (int sum, DeadlineModel item) => sum + item.progress) ~/
+          : items.fold<int>(
+                  0, (int sum, DeadlineModel item) => sum + item.progress) ~/
               items.length;
-      return _SubjectProgress(subject.name, subject.displayColor, average.clamp(0, 100));
+      return _SubjectProgress(
+          subject.name, subject.displayColor, average.clamp(0, 100));
     }).toList()
-      ..sort((_SubjectProgress a, _SubjectProgress b) => b.value.compareTo(a.value));
+      ..sort((_SubjectProgress a, _SubjectProgress b) =>
+          b.value.compareTo(a.value));
 
     return _DashboardData(
       activeSemester: activeSemester,
@@ -143,7 +158,8 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       body: FutureBuilder<_DashboardData>(
         future: _future,
-        builder: (BuildContext context, AsyncSnapshot<_DashboardData> snapshot) {
+        builder:
+            (BuildContext context, AsyncSnapshot<_DashboardData> snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -162,7 +178,13 @@ class _DashboardPageState extends State<DashboardPage> {
             child: ListView(
               padding: EdgeInsets.zero,
               children: <Widget>[
-                _DashboardHero(data: data, displayName: context.read<AppSessionController>().settings?.displayName ?? ''),
+                _DashboardHero(
+                    data: data,
+                    displayName: context
+                            .read<AppSessionController>()
+                            .settings
+                            ?.displayName ??
+                        ''),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(22, 0, 22, 24),
                   child: Column(
@@ -181,18 +203,22 @@ class _DashboardPageState extends State<DashboardPage> {
                               iconSize: 18,
                               borderRadius: 14,
                             ),
-                            title: Text(data.activeSemester?.name ?? 'Thiết lập học kỳ'),
+                            title: Text(data.activeSemester?.name ??
+                                'Thiết lập học kỳ'),
                             subtitle: Text(
                               data.activeSemester == null
                                   ? 'Chọn thời gian học kỳ của bạn'
                                   : 'Còn ${data.remainingWeeks} tuần',
                             ),
-                            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                            trailing: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14),
                             onTap: () => context.push('/semester'),
                           ),
                         ),
                       ),
-                      const _SectionTitle('Lịch học hôm nay', route: '/calendar'),
+                      const _SectionTitle('Lịch học hôm nay',
+                          route: '/calendar'),
                       const SizedBox(height: 12),
                       ...data.todaySchedule.isEmpty
                           ? const <Widget>[
@@ -208,7 +234,8 @@ class _DashboardPageState extends State<DashboardPage> {
                                   ))
                               .toList(),
                       const SizedBox(height: 18),
-                      const _SectionTitle('Deadline sắp tới', route: '/deadlines'),
+                      const _SectionTitle('Deadline sắp tới',
+                          route: '/deadlines'),
                       const SizedBox(height: 12),
                       ...data.upcomingDeadlines.isEmpty
                           ? const <Widget>[
@@ -224,7 +251,8 @@ class _DashboardPageState extends State<DashboardPage> {
                                   ))
                               .toList(),
                       const SizedBox(height: 18),
-                      Text('Hành động nhanh', style: Theme.of(context).textTheme.titleLarge),
+                      Text('Hành động nhanh',
+                          style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 12),
                       Row(
                         children: <Widget>[
@@ -249,14 +277,24 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 12),
+                      _QuickActionCard(
+                        icon: Icons.note_alt_rounded,
+                        color: StudyFlowPalette.indigo,
+                        title: 'Ghi chú',
+                        subtitle: 'Mở Notes để lưu ý nhanh',
+                        onTap: () => context.push('/notes'),
+                      ),
                       const SizedBox(height: 20),
-                      const _SectionTitle('Tiến độ môn học', route: '/subjects'),
+                      const _SectionTitle('Tiến độ môn học',
+                          route: '/subjects'),
                       const SizedBox(height: 12),
                       ...data.progress.isEmpty
                           ? const <Widget>[
                               _MessageCard(
                                 title: 'Chưa có dữ liệu tiến độ',
-                                subtitle: 'Thêm môn học và deadline để hiển thị tiến độ.',
+                                subtitle:
+                                    'Thêm môn học và deadline để hiển thị tiến độ.',
                               ),
                             ]
                           : data.progress
@@ -336,11 +374,17 @@ class _DashboardHero extends StatelessWidget {
           const SizedBox(height: 20),
           Row(
             children: <Widget>[
-              Expanded(child: _HeroStat('${(data.focusMinutesToday / 60).toStringAsFixed(1)} h', 'Học hôm nay')),
+              Expanded(
+                  child: _HeroStat(
+                      '${(data.focusMinutesToday / 60).toStringAsFixed(1)} h',
+                      'Học hôm nay')),
               const SizedBox(width: 12),
-              Expanded(child: _HeroStat('${data.upcomingDeadlines.length}', 'Deadline')),
+              Expanded(
+                  child: _HeroStat(
+                      '${data.upcomingDeadlines.length}', 'Deadline')),
               const SizedBox(width: 12),
-              Expanded(child: _HeroStat('${data.todayPlans.length}', 'Hoàn thành')),
+              Expanded(
+                  child: _HeroStat('${data.todayPlans.length}', 'Hoàn thành')),
             ],
           ),
         ],
@@ -365,9 +409,15 @@ class _HeroStat extends StatelessWidget {
       ),
       child: Column(
         children: <Widget>[
-          Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white)),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white)),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8))),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 12, color: Colors.white.withValues(alpha: 0.8))),
         ],
       ),
     );
@@ -384,12 +434,16 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
-        Expanded(child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
+        Expanded(
+            child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
         GestureDetector(
           onTap: () => context.push(route),
           child: Text(
             'Xem tất cả',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: StudyFlowPalette.blue),
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: StudyFlowPalette.blue),
           ),
         ),
       ],
@@ -423,19 +477,26 @@ class _ScheduleCard extends StatelessWidget {
               children: <Widget>[
                 Text(item.subjectName ?? 'Môn học'),
                 const SizedBox(height: 4),
-                Text(item.type.isEmpty ? item.room : item.type, style: Theme.of(context).textTheme.bodyMedium),
+                Text(item.type.isEmpty ? item.room : item.type,
+                    style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 6),
                 Row(
                   children: <Widget>[
-                    const Icon(Icons.schedule_rounded, size: 14, color: StudyFlowPalette.textMuted),
+                    const Icon(Icons.schedule_rounded,
+                        size: 14, color: StudyFlowPalette.textMuted),
                     const SizedBox(width: 4),
-                    Text(item.timeRange, style: Theme.of(context).textTheme.bodyMedium),
+                    Text(item.timeRange,
+                        style: Theme.of(context).textTheme.bodyMedium),
                   ],
                 ),
               ],
             ),
           ),
-          Text(item.room, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: StudyFlowPalette.textPrimary)),
+          Text(item.room,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: StudyFlowPalette.textPrimary)),
         ],
       ),
     );
@@ -458,38 +519,52 @@ class _DeadlineCard extends StatelessWidget {
             children: <Widget>[
               Expanded(child: Text(item.title)),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: item.displayColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   '${remainingDays.abs()} ngày',
-                  style: TextStyle(color: item.displayColor, fontSize: 11, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                      color: item.displayColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          Text(item.subjectName ?? 'Môn học', style: Theme.of(context).textTheme.bodyMedium),
+          Text(item.subjectName ?? 'Môn học',
+              style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 10),
           Row(
             children: <Widget>[
-              const Icon(Icons.schedule_rounded, size: 14, color: StudyFlowPalette.textMuted),
+              const Icon(Icons.schedule_rounded,
+                  size: 14, color: StudyFlowPalette.textMuted),
               const SizedBox(width: 4),
-              Text(item.dueTime ?? '23:59', style: Theme.of(context).textTheme.bodyMedium),
+              Text(item.dueTime ?? '23:59',
+                  style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(width: 12),
-              const Icon(Icons.event_rounded, size: 14, color: StudyFlowPalette.textMuted),
+              const Icon(Icons.event_rounded,
+                  size: 14, color: StudyFlowPalette.textMuted),
               const SizedBox(width: 4),
-              Text(DateTimeUtils.toDbDate(item.dueDate), style: Theme.of(context).textTheme.bodyMedium),
+              Text(DateTimeUtils.toDbDate(item.dueDate),
+                  style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: <Widget>[
-              Expanded(child: StudyFlowProgressBar(value: item.progress / 100, color: item.displayColor, height: 8)),
+              Expanded(
+                  child: StudyFlowProgressBar(
+                      value: item.progress / 100,
+                      color: item.displayColor,
+                      height: 8)),
               const SizedBox(width: 10),
-              Text('${item.progress} %', style: Theme.of(context).textTheme.bodyMedium),
+              Text('${item.progress} %',
+                  style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
         ],
@@ -558,7 +633,9 @@ class _SubjectProgressRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
           ),
           child: Center(
-            child: Text(item.name.isEmpty ? '?' : item.name[0].toUpperCase(), style: TextStyle(color: item.color, fontWeight: FontWeight.w700)),
+            child: Text(item.name.isEmpty ? '?' : item.name[0].toUpperCase(),
+                style:
+                    TextStyle(color: item.color, fontWeight: FontWeight.w700)),
           ),
         ),
         const SizedBox(width: 12),
@@ -569,11 +646,13 @@ class _SubjectProgressRow extends StatelessWidget {
               Row(
                 children: <Widget>[
                   Expanded(child: Text(item.name)),
-                  Text('${item.value} %', style: Theme.of(context).textTheme.bodyMedium),
+                  Text('${item.value} %',
+                      style: Theme.of(context).textTheme.bodyMedium),
                 ],
               ),
               const SizedBox(height: 8),
-              StudyFlowProgressBar(value: item.value / 100, color: item.color, height: 4),
+              StudyFlowProgressBar(
+                  value: item.value / 100, color: item.color, height: 4),
             ],
           ),
         ),
@@ -620,8 +699,12 @@ class _DashboardEmpty extends StatelessWidget {
             children: <Widget>[
               Row(
                 children: const <Widget>[
-                  Expanded(child: Text('Dashboard', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700))),
-                  StudyFlowCircleIconButton(icon: Icons.notifications_none_rounded),
+                  Expanded(
+                      child: Text('Dashboard',
+                          style: TextStyle(
+                              fontSize: 30, fontWeight: FontWeight.w700))),
+                  StudyFlowCircleIconButton(
+                      icon: Icons.notifications_none_rounded),
                   SizedBox(width: 10),
                   StudyFlowCircleIconButton(icon: Icons.person_outline_rounded),
                 ],
@@ -638,7 +721,9 @@ class _DashboardEmpty extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              Center(child: Text('Chưa có dữ liệu', style: Theme.of(context).textTheme.titleLarge)),
+              Center(
+                  child: Text('Chưa có dữ liệu',
+                      style: Theme.of(context).textTheme.titleLarge)),
               const SizedBox(height: 12),
               Center(
                 child: Text(
@@ -648,9 +733,15 @@ class _DashboardEmpty extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              StudyFlowGradientButton(label: 'Thiết lập học kỳ', onTap: onSetup),
+              StudyFlowGradientButton(
+                  label: 'Thiết lập học kỳ', onTap: onSetup),
               const SizedBox(height: 14),
-              StudyFlowOutlineButton(label: 'Thêm môn học', onTap: () => context.push('/subjects/add')),
+              StudyFlowOutlineButton(
+                  label: 'Thêm môn học',
+                  onTap: () => context.push('/subjects/add')),
+              const SizedBox(height: 12),
+              StudyFlowOutlineButton(
+                  label: 'Mở ghi chú', onTap: () => context.push('/notes')),
             ],
           ),
         ),
@@ -684,7 +775,9 @@ class _DashboardGoal extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Center(child: Text('Chúc mừng!', style: Theme.of(context).textTheme.headlineSmall)),
+            Center(
+                child: Text('Chúc mừng!',
+                    style: Theme.of(context).textTheme.headlineSmall)),
             const SizedBox(height: 8),
             Center(
               child: Text(
@@ -698,28 +791,47 @@ class _DashboardGoal extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('Siêu sao học tập', style: Theme.of(context).textTheme.titleLarge),
+                  Text('Siêu sao học tập',
+                      style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 8),
-                  Text('Hoàn thành 10 deadline trong tuần này', style: Theme.of(context).textTheme.bodyMedium),
+                  Text('Hoàn thành 10 deadline trong tuần này',
+                      style: Theme.of(context).textTheme.bodyMedium),
                 ],
               ),
             ),
             const SizedBox(height: 14),
             Row(
               children: <Widget>[
-                Expanded(child: _GoalStatCard(color: StudyFlowPalette.green, value: '7', label: 'Ngày liên tiếp')),
+                Expanded(
+                    child: _GoalStatCard(
+                        color: StudyFlowPalette.green,
+                        value: '7',
+                        label: 'Ngày liên tiếp')),
                 const SizedBox(width: 12),
-                const Expanded(child: _GoalStatCard(color: StudyFlowPalette.blue, value: '100%', label: 'Mục tiêu đạt')),
+                const Expanded(
+                    child: _GoalStatCard(
+                        color: StudyFlowPalette.blue,
+                        value: '100%',
+                        label: 'Mục tiêu đạt')),
               ],
             ),
             const SizedBox(height: 18),
-            Text('Tóm tắt hôm nay', style: Theme.of(context).textTheme.titleLarge),
+            Text('Tóm tắt hôm nay',
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
-            _MessageCard(title: 'Phiên học Pomodoro', subtitle: '${focusMinutesToday ~/ 25} phiên'),
+            _MessageCard(
+                title: 'Phiên học Pomodoro',
+                subtitle: '${focusMinutesToday ~/ 25} phiên'),
             const SizedBox(height: 10),
-            _MessageCard(title: 'Thời gian học', subtitle: '${(focusMinutesToday / 60).toStringAsFixed(1)} giờ'),
+            _MessageCard(
+                title: 'Thời gian học',
+                subtitle: '${(focusMinutesToday / 60).toStringAsFixed(1)} giờ'),
             const SizedBox(height: 20),
-            StudyFlowGradientButton(label: 'Xem thống kê chi tiết', onTap: onAnalytics),
+            StudyFlowGradientButton(
+                label: 'Xem thống kê chi tiết', onTap: onAnalytics),
+            const SizedBox(height: 12),
+            StudyFlowOutlineButton(
+                label: 'Mở ghi chú', onTap: () => context.push('/notes')),
           ],
         ),
       ),
@@ -745,7 +857,11 @@ class _GoalStatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w700)),
+          Text(value,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(label, style: const TextStyle(color: Colors.white)),
         ],
@@ -788,4 +904,3 @@ class _SubjectProgress {
   final Color color;
   final int value;
 }
-

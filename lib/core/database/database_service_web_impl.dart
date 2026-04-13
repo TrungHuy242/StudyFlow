@@ -1,5 +1,5 @@
 import 'package:path/path.dart';
-import 'package:sqflite_common/sqflite.dart';
+import 'package:sqflite_common/sqlite_api.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 import '../constants/app_constants.dart';
@@ -8,44 +8,45 @@ class DatabaseService {
   DatabaseService._();
 
   static final DatabaseService instance = DatabaseService._();
-  dynamic _database;
-  final DatabaseFactory _dbFactory = databaseFactoryFfiWeb;
+  Database? _database;
+  final DatabaseFactory _dbFactory = createDatabaseFactoryFfiWeb(
+    options: SqfliteFfiWebOptions(
+      indexedDbName: 'studyflow_databases',
+      sqlite3WasmUri: Uri.parse('sqlite3.wasm'),
+      sharedWorkerUri: Uri.parse('sqflite_sw.js'),
+    ),
+  );
 
-  Future<dynamic> get database async {
+  Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await init();
     return _database!;
   }
 
-  Future<dynamic> init() async {
-    try {
-      final dbPath = await _dbFactory.getDatabasesPath();
-      final path = join(dbPath, AppConstants.databaseName);
+  Future<Database> init() async {
+    final String dbPath = await _dbFactory.getDatabasesPath();
+    final String path = join(dbPath, AppConstants.databaseName);
 
-      _database = await _dbFactory.openDatabase(
-        path,
-        options: OpenDatabaseOptions(
-          version: 2,
-          onConfigure: (db) async {
-            await db.execute('PRAGMA foreign_keys = ON');
-          },
-          onCreate: (db, version) async {
-            await _createSchema(db);
-          },
-          onUpgrade: (db, oldVersion, newVersion) async {
-            await _upgradeSchema(db, oldVersion);
-          },
-        ),
-      );
+    _database = await _dbFactory.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 2,
+        onConfigure: (Database db) async {
+          await db.execute('PRAGMA foreign_keys = ON');
+        },
+        onCreate: (Database db, int version) async {
+          await _createSchema(db);
+        },
+        onUpgrade: (Database db, int oldVersion, int newVersion) async {
+          await _upgradeSchema(db, oldVersion);
+        },
+      ),
+    );
 
-      return _database!;
-    } catch (e) {
-      // Return null for web if database fails, app will work without persistence
-      return null;
-    }
+    return _database!;
   }
 
-  Future<void> _createSchema(dynamic db) async {
+  Future<void> _createSchema(Database db) async {
     await db.execute('''
       CREATE TABLE semesters(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -172,9 +173,10 @@ class DatabaseService {
     await _ensureDefaultSettings(db);
   }
 
-  Future<void> _upgradeSchema(dynamic db, int oldVersion) async {
+  Future<void> _upgradeSchema(Database db, int oldVersion) async {
     if (oldVersion < 2) {
-      await db.execute('ALTER TABLE user_settings ADD COLUMN local_password TEXT');
+      await db
+          .execute('ALTER TABLE user_settings ADD COLUMN local_password TEXT');
       await db.execute(
         'ALTER TABLE user_settings ADD COLUMN is_logged_in INTEGER NOT NULL DEFAULT 0',
       );
@@ -195,8 +197,8 @@ class DatabaseService {
     await _ensureDefaultSettings(db);
   }
 
-  Future<void> _ensureDefaultSettings(dynamic db) async {
-    final result = await db.query(
+  Future<void> _ensureDefaultSettings(Database db) async {
+    final List<Map<String, Object?>> result = await db.query(
       'user_settings',
       limit: 1,
     );

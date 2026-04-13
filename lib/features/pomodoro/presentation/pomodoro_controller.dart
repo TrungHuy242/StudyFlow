@@ -58,25 +58,34 @@ class PomodoroController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleTimer() {
+  void handlePrimaryAction() {
     if (_state.isRunning) {
-      _ticker?.cancel();
-      _state = _state.copyWith(isRunning: false);
-      notifyListeners();
+      pauseTimer();
       return;
     }
 
+    startOrResumeTimer();
+  }
+
+  void startOrResumeTimer() {
+    _ticker?.cancel();
     _state = _state.copyWith(isRunning: true);
     notifyListeners();
     _ticker = Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
       if (_state.remainingSeconds <= 1) {
         timer.cancel();
-        await _completePhase();
+        await _finishCurrentPhase();
         return;
       }
       _state = _state.copyWith(remainingSeconds: _state.remainingSeconds - 1);
       notifyListeners();
     });
+  }
+
+  void pauseTimer() {
+    _ticker?.cancel();
+    _state = _state.copyWith(isRunning: false);
+    notifyListeners();
   }
 
   void resetCurrentPhase() {
@@ -89,31 +98,71 @@ class PomodoroController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> skipPhase() async {
+  Future<void> completeCurrentFocusSession() async {
+    if (!_state.isFocusPhase || !_state.hasStartedCurrentPhase) {
+      return;
+    }
+
     _ticker?.cancel();
-    await _completePhase(skipLog: true);
+    await _finishCurrentPhase(
+      completedAt: DateTime.now(),
+      durationMinutes: _elapsedFocusMinutes,
+    );
   }
 
-  Future<void> _completePhase({bool skipLog = false}) async {
-    if (_state.phase == PomodoroPhase.focus && !skipLog) {
+  Future<void> skipCurrentBreak() async {
+    if (!_state.isBreakPhase) {
+      return;
+    }
+
+    _ticker?.cancel();
+    _state = _createStateForPhase(
+      phase: PomodoroPhase.focus,
+      completedFocusSessions: _state.completedFocusSessions,
+      selectedSubjectId: _state.selectedSubjectId,
+    );
+    notifyListeners();
+  }
+
+  int get _elapsedFocusMinutes {
+    final int elapsedSeconds = (_state.totalSeconds - _state.remainingSeconds)
+        .clamp(0, _state.totalSeconds);
+    if (elapsedSeconds <= 0) {
+      return 0;
+    }
+    return (elapsedSeconds / 60).ceil();
+  }
+
+  Future<void> _finishCurrentPhase({
+    DateTime? completedAt,
+    int? durationMinutes,
+  }) async {
+    if (_state.isFocusPhase) {
+      final int loggedMinutes = durationMinutes ??
+          (_settings?.focusDuration ?? _state.totalSeconds ~/ 60);
+      final DateTime finishedAt = completedAt ?? DateTime.now();
       await _repository.saveSession(
         PomodoroSessionModel(
           subjectId: _state.selectedSubjectId,
-          sessionDate: DateTime.now(),
-          duration: _settings?.focusDuration ?? 25,
+          sessionDate: DateTime(
+            finishedAt.year,
+            finishedAt.month,
+            finishedAt.day,
+          ),
+          duration: loggedMinutes,
           type: 'Focus',
-          completedAt: DateTime.now(),
+          completedAt: finishedAt,
         ),
       );
       _history = await _repository.getSessions();
       _refreshNotifier.markDirty();
     }
 
-    final int completedFocusSessions = _state.phase == PomodoroPhase.focus
+    final int completedFocusSessions = _state.isFocusPhase
         ? _state.completedFocusSessions + 1
         : _state.completedFocusSessions;
     final PomodoroPhase nextPhase;
-    if (_state.phase == PomodoroPhase.focus) {
+    if (_state.isFocusPhase) {
       nextPhase = completedFocusSessions % 4 == 0
           ? PomodoroPhase.longBreak
           : PomodoroPhase.shortBreak;

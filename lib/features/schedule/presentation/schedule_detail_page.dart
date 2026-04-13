@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -43,7 +43,8 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
   }
 
   Future<_ScheduleDetailData?> _loadData() async {
-    final ScheduleModel? schedule = await _scheduleRepository.getScheduleById(widget.scheduleId);
+    final ScheduleModel? schedule =
+        await _scheduleRepository.getScheduleById(widget.scheduleId);
     if (schedule == null) {
       return null;
     }
@@ -61,7 +62,8 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
   }
 
   Future<void> _openEdit() async {
-    final bool? changed = await context.push<bool>('/calendar/${widget.scheduleId}/edit');
+    final bool? changed =
+        await context.push<bool>('/calendar/${widget.scheduleId}/edit');
     if (changed != true) {
       return;
     }
@@ -92,157 +94,9 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
 
   void _showPlaceholder(String label) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Tính năng $label sẽ được triển khai ở phiên bản tới.')),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: FutureBuilder<_ScheduleDetailData?>(
-          future: _future,
-          builder: (BuildContext context, AsyncSnapshot<_ScheduleDetailData?> snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final _ScheduleDetailData? data = snapshot.data;
-            if (data == null) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text('Không tìm thấy lịch học', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 12),
-                      StudyFlowGradientButton(label: 'Quay lại', onTap: () => context.pop()),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            final ScheduleModel schedule = data.schedule;
-            final SubjectModel? subject = data.subject;
-
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    StudyFlowCircleIconButton(
-                      icon: Icons.arrow_back_ios_new_rounded,
-                      onTap: () => context.pop(),
-                    ),
-                    const Spacer(),
-                    StudyFlowCircleIconButton(
-                      icon: Icons.edit_outlined,
-                      onTap: _openEdit,
-                    ),
-                    const SizedBox(width: 10),
-                    StudyFlowCircleIconButton(
-                      icon: Icons.delete_outline_rounded,
-                      backgroundColor: const Color(0xFFFFF1F1),
-                      foregroundColor: const Color(0xFFD9534F),
-                      onTap: _deleteSchedule,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                StudyFlowIconBadge(
-                  icon: Icons.menu_book_rounded,
-                  backgroundColor: schedule.displayColor.withValues(alpha: 0.12),
-                  foregroundColor: schedule.displayColor,
-                  size: 64,
-                  iconSize: 28,
-                  borderRadius: 22,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  schedule.subjectName ?? subject?.name ?? 'Lịch học',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: StudyFlowPalette.surfaceSoft,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    schedule.type,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: StudyFlowPalette.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                _ScheduleInfoCard(
-                  icon: Icons.schedule_rounded,
-                  title: 'Thời gian',
-                  value: '${_weekdayLabel(schedule.weekday)} • ${schedule.timeRange}',
-                ),
-                const SizedBox(height: 12),
-                _ScheduleInfoCard(
-                  icon: Icons.location_on_outlined,
-                  title: 'Địa điểm',
-                  value: schedule.room.isEmpty ? 'Chưa có phòng học' : schedule.room,
-                ),
-                const SizedBox(height: 12),
-                _ScheduleInfoCard(
-                  icon: Icons.person_outline_rounded,
-                  title: 'Giảng viên',
-                  value: subject?.teacher.isNotEmpty == true
-                      ? subject!.teacher
-                      : 'Chưa cập nhật giảng viên',
-                ),
-                if (subject != null) ...<Widget>[
-                  const SizedBox(height: 18),
-                  StudyFlowSurfaceCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text('Thông tin môn học', style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 12),
-                        if (subject.code.isNotEmpty)
-                          Text('Mã môn: ${subject.code}', style: Theme.of(context).textTheme.bodyMedium),
-                        const SizedBox(height: 6),
-                        Text('Số tín chỉ: ${subject.credits}', style: Theme.of(context).textTheme.bodyMedium),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 22),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: StudyFlowOutlineButton(
-                        label: 'Điểm danh',
-                        icon: Icons.check_circle_outline_rounded,
-                        onTap: () => _showPlaceholder('điểm danh'),
-                        height: 54,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: StudyFlowGradientButton(
-                        label: 'Nhắc nhở',
-                        icon: Icons.notifications_none_rounded,
-                        onTap: () => _showPlaceholder('nhắc nhở'),
-                        height: 54,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+      SnackBar(
+          content:
+              Text('Tính năng $label sẽ được triển khai ở phiên bản tới.')),
     );
   }
 
@@ -258,44 +112,236 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
     ];
     return labels[weekday - 1];
   }
+
+  String _displayType(String value) {
+    switch (value.toLowerCase()) {
+      case 'lecture':
+      case 'lý thuyết':
+        return 'Lý thuyết';
+      case 'practice':
+      case 'thực hành':
+        return 'Thực hành';
+      case 'seminar':
+        return 'Seminar';
+      default:
+        return value;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: FutureBuilder<_ScheduleDetailData?>(
+          future: _future,
+          builder: (BuildContext context,
+              AsyncSnapshot<_ScheduleDetailData?> snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final _ScheduleDetailData? data = snapshot.data;
+            if (data == null) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        'Không tìm thấy lịch học',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 12),
+                      StudyFlowGradientButton(
+                        label: 'Quay lại',
+                        onTap: () => context.pop(),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            final ScheduleModel schedule = data.schedule;
+            final SubjectModel? subject = data.subject;
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    StudyFlowCircleIconButton(
+                      icon: Icons.arrow_back_rounded,
+                      size: 42,
+                      onTap: () => context.pop(),
+                    ),
+                    const Spacer(),
+                    StudyFlowCircleIconButton(
+                      icon: Icons.edit_outlined,
+                      size: 42,
+                      onTap: _openEdit,
+                    ),
+                    const SizedBox(width: 10),
+                    StudyFlowCircleIconButton(
+                      icon: Icons.delete_outline_rounded,
+                      size: 42,
+                      backgroundColor: const Color(0xFFFFF1EE),
+                      foregroundColor: StudyFlowPalette.red,
+                      onTap: _deleteSchedule,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
+                  decoration: BoxDecoration(
+                    color: schedule.displayColor,
+                    borderRadius: BorderRadius.circular(32),
+                  ),
+                  child: Column(
+                    children: <Widget>[
+                      Text(
+                        schedule.subjectName ?? subject?.name ?? 'Lịch học',
+                        textAlign: TextAlign.center,
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _displayType(schedule.type),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.82),
+                              fontSize: 16,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 22),
+                _ScheduleInfoSection(
+                  label: 'Thời gian',
+                  value:
+                      '${_weekdayLabel(schedule.weekday)} • ${schedule.timeRange}',
+                ),
+                const SizedBox(height: 18),
+                _ScheduleInfoSection(
+                  label: 'Địa điểm',
+                  value: schedule.room.isEmpty
+                      ? 'Chưa có phòng học'
+                      : schedule.room,
+                ),
+                const SizedBox(height: 18),
+                _ScheduleInfoSection(
+                  label: 'Giảng viên',
+                  value: subject?.teacher.isNotEmpty == true
+                      ? subject!.teacher
+                      : 'Chưa cập nhật giảng viên',
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: _ActionTextButton(
+                        label: 'Đánh dấu có mặt',
+                        active: true,
+                        onTap: () => _showPlaceholder('điểm danh'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _ActionTextButton(
+                        label: 'Thêm nhắc nhở',
+                        active: false,
+                        onTap: () => _showPlaceholder('nhắc nhở'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
 
-class _ScheduleInfoCard extends StatelessWidget {
-  const _ScheduleInfoCard({
-    required this.icon,
-    required this.title,
+class _ScheduleInfoSection extends StatelessWidget {
+  const _ScheduleInfoSection({
+    required this.label,
     required this.value,
   });
 
-  final IconData icon;
-  final String title;
+  final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return StudyFlowSurfaceCard(
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          StudyFlowIconBadge(
-            icon: icon,
-            backgroundColor: StudyFlowPalette.surfaceSoft,
-            foregroundColor: StudyFlowPalette.textSecondary,
-            size: 40,
-            iconSize: 18,
-            borderRadius: 14,
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF64748B),
+                  fontSize: 14,
+                ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(title, style: Theme.of(context).textTheme.bodyMedium),
-                const SizedBox(height: 4),
-                Text(value, style: Theme.of(context).textTheme.titleMedium),
-              ],
-            ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: const Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionTextButton extends StatelessWidget {
+  const _ActionTextButton({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color:
+              active ? const Color(0xFFEFF6FF) : StudyFlowPalette.surfaceSoft,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: active ? StudyFlowPalette.blue : const Color(0xFF475569),
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     );
   }
@@ -310,4 +356,3 @@ class _ScheduleDetailData {
   final ScheduleModel schedule;
   final SubjectModel? subject;
 }
-

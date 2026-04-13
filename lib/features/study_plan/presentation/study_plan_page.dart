@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/database/database_service.dart';
 import '../../../core/state/app_refresh_notifier.dart';
 import '../../../core/theme/studyflow_palette.dart';
+import '../../../core/utils/date_time_utils.dart';
 import '../../../shared/widgets/app_confirm_dialog.dart';
-import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/app_loading_state.dart';
 import '../../../shared/widgets/studyflow_components.dart';
@@ -62,8 +63,10 @@ class _StudyPlanPageState extends State<StudyPlanPage> {
     await _future;
   }
 
-  Future<void> _openEditor(_StudyPlanPageData data, [StudyPlanModel? plan]) async {
-    final StudyPlanModel? result = await Navigator.of(context).push<StudyPlanModel>(
+  Future<void> _openEditor(_StudyPlanPageData data,
+      [StudyPlanModel? plan]) async {
+    final StudyPlanModel? result =
+        await Navigator.of(context).push<StudyPlanModel>(
       MaterialPageRoute<StudyPlanModel>(
         builder: (BuildContext context) => StudyPlanEditorPage(
           subjects: data.subjects,
@@ -99,9 +102,9 @@ class _StudyPlanPageState extends State<StudyPlanPage> {
     }
     final bool confirmed = await AppConfirmDialog.show(
       context: context,
-      title: 'Delete study plan?',
-      message: '"${plan.title}" will be removed from your schedule.',
-      confirmLabel: 'Delete',
+      title: 'Xóa kế hoạch ôn tập?',
+      message: '"${plan.title}" sẽ bị xóa khỏi danh sách kế hoạch ôn tập.',
+      confirmLabel: 'Xóa',
       destructive: true,
     );
     if (!confirmed) {
@@ -126,33 +129,46 @@ class _StudyPlanPageState extends State<StudyPlanPage> {
     );
   }
 
+  void _handleBottomNavTap(int index) {
+    switch (index) {
+      case 0:
+        context.go('/home');
+        break;
+      case 1:
+        context.go('/calendar');
+        break;
+      case 2:
+        context.go('/deadlines');
+        break;
+      case 3:
+        context.go('/analytics');
+        break;
+      case 4:
+        context.go('/profile');
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: StudyFlowPalette.background,
-      floatingActionButton: FutureBuilder<_StudyPlanPageData>(
-        future: _future,
-        builder: (BuildContext context, AsyncSnapshot<_StudyPlanPageData> snapshot) {
-          if (!snapshot.hasData) {
-            return const SizedBox.shrink();
-          }
-          return FloatingActionButton(
-            backgroundColor: StudyFlowPalette.blue,
-            onPressed: () => _openEditor(snapshot.data!),
-            child: const Icon(Icons.add_rounded, color: Colors.white),
-          );
-        },
+      backgroundColor: Colors.white,
+      bottomNavigationBar: StudyFlowBottomNavBar(
+        currentIndex: 0,
+        onTap: _handleBottomNavTap,
       ),
       body: FutureBuilder<_StudyPlanPageData>(
         future: _future,
-        builder: (BuildContext context, AsyncSnapshot<_StudyPlanPageData> snapshot) {
+        builder:
+            (BuildContext context, AsyncSnapshot<_StudyPlanPageData> snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const AppLoadingState(message: 'Loading study plans...');
+            return const AppLoadingState(
+                message: 'Đang tải kế hoạch ôn tập...');
           }
           if (snapshot.hasError) {
             return AppErrorState(
-              title: 'Unable to load study plans',
-              message: 'Try refreshing the study plan screen.',
+              title: 'Không thể tải kế hoạch ôn tập',
+              message: 'Hãy thử làm mới màn hình kế hoạch ôn tập.',
               onAction: _refresh,
             );
           }
@@ -170,18 +186,28 @@ class _StudyPlanPageState extends State<StudyPlanPage> {
           final List<StudyPlanModel> upcoming = data.plans
               .where((StudyPlanModel plan) => plan.status != 'Done')
               .toList()
-            ..sort((StudyPlanModel a, StudyPlanModel b) => a.planDate.compareTo(b.planDate));
+            ..sort(
+              (StudyPlanModel a, StudyPlanModel b) =>
+                  a.planDate.compareTo(b.planDate),
+            );
           final List<StudyPlanModel> completed = data.plans
               .where((StudyPlanModel plan) => plan.status == 'Done')
               .toList()
-            ..sort((StudyPlanModel a, StudyPlanModel b) => b.planDate.compareTo(a.planDate));
-          final List<StudyPlanModel> selectedDayPlans = data.plans.where((StudyPlanModel plan) {
+            ..sort(
+              (StudyPlanModel a, StudyPlanModel b) =>
+                  b.planDate.compareTo(a.planDate),
+            );
+          final List<StudyPlanModel> selectedDayPlans =
+              data.plans.where((StudyPlanModel plan) {
             final DateTime value = plan.planDate;
             return value.year == _selectedDate.year &&
                 value.month == _selectedDate.month &&
                 value.day == _selectedDate.day;
           }).toList()
-            ..sort((StudyPlanModel a, StudyPlanModel b) => a.timeLabel.compareTo(b.timeLabel));
+                ..sort(
+                  (StudyPlanModel a, StudyPlanModel b) =>
+                      a.timeLabel.compareTo(b.timeLabel),
+                );
 
           return RefreshIndicator(
             onRefresh: _refresh,
@@ -195,7 +221,8 @@ class _StudyPlanPageState extends State<StudyPlanPage> {
                         _view = value;
                       });
                     },
-                    onTapItem: (StudyPlanModel value) => _openDetail(data, value),
+                    onTapItem: (StudyPlanModel value) =>
+                        _openDetail(data, value),
                     onDeleteItem: _deletePlan,
                   )
                 : _PlanWeekView(
@@ -213,7 +240,8 @@ class _StudyPlanPageState extends State<StudyPlanPage> {
                         _selectedDate = value;
                       });
                     },
-                    onTapItem: (StudyPlanModel value) => _openDetail(data, value),
+                    onTapItem: (StudyPlanModel value) =>
+                        _openDetail(data, value),
                     onDeleteItem: _deletePlan,
                   ),
           );
@@ -242,21 +270,62 @@ class _StudyPlanEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text('Study Plan', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 24),
+            Text(
+              'Kế hoạch ôn tập',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: const Color(0xFF0F172A),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 90),
             Expanded(
               child: Center(
-                child: AppEmptyState(
-                  title: 'No study plans yet',
-                  message:
-                      'Add your first study block to keep daily review sessions organized.',
-                  actionLabel: 'Create plan',
-                  onAction: onAdd,
-                  icon: Icons.event_note_rounded,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Container(
+                      width: 94,
+                      height: 94,
+                      decoration: BoxDecoration(
+                        color: StudyFlowPalette.surfaceSoft,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: const Icon(
+                        Icons.auto_stories_outlined,
+                        color: Color(0xFF94A3B8),
+                        size: 40,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Chưa có kế hoạch',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: const Color(0xFF0F172A),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Tạo kế hoạch ôn tập để theo dõi và đạt\nđược mục tiêu học tập',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: const Color(0xFF64748B),
+                            height: 1.5,
+                          ),
+                    ),
+                    const SizedBox(height: 28),
+                    StudyFlowGradientButton(
+                      label: 'Tạo kế hoạch đầu tiên',
+                      onTap: onAdd,
+                      height: 54,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -288,19 +357,26 @@ class _PlanListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
         children: <Widget>[
           Row(
             children: <Widget>[
               Expanded(
                 child: Text(
-                  'Study Plan',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                  'Kế hoạch ôn tập',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: const Color(0xFF0F172A),
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
               ),
-              TextButton(
-                onPressed: onAdd,
-                child: const Text('Add plan'),
+              StudyFlowCircleIconButton(
+                icon: Icons.add_rounded,
+                size: 44,
+                backgroundColor: StudyFlowPalette.blue,
+                foregroundColor: Colors.white,
+                onTap: onAdd,
               ),
             ],
           ),
@@ -309,15 +385,38 @@ class _PlanListView extends StatelessWidget {
             currentView: _PlanView.list,
             onChangeView: onChangeView,
           ),
-          const SizedBox(height: 18),
-          Text('Upcoming', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 20),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _PlanStatCard(
+                  value: '${upcoming.length}',
+                  label: 'Kế hoạch sắp tới',
+                  color: StudyFlowPalette.blue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _PlanStatCard(
+                  value: '${completed.length}',
+                  label: 'Đã hoàn thành',
+                  color: StudyFlowPalette.green,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Sắp tới',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: const Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
           const SizedBox(height: 12),
           if (upcoming.isEmpty)
-            const AppEmptyState(
-              title: 'No upcoming study blocks',
-              message: 'Your active study sessions will appear here.',
-              icon: Icons.schedule_rounded,
-            )
+            const _CompactPlanEmpty(title: 'Không có kế hoạch sắp tới')
           else
             ...upcoming.map((StudyPlanModel plan) {
               return Padding(
@@ -330,14 +429,17 @@ class _PlanListView extends StatelessWidget {
               );
             }),
           const SizedBox(height: 18),
-          Text('Completed', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            'Đã hoàn thành',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: const Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
           const SizedBox(height: 12),
           if (completed.isEmpty)
-            const AppEmptyState(
-              title: 'No completed plans yet',
-              message: 'Completed study blocks will appear here.',
-              icon: Icons.task_alt_rounded,
-            )
+            const _CompactPlanEmpty(title: 'Chưa có kế hoạch hoàn thành')
           else
             ...completed.map((StudyPlanModel plan) {
               return Padding(
@@ -376,23 +478,63 @@ class _PlanWeekView extends StatelessWidget {
   final ValueChanged<StudyPlanModel> onTapItem;
   final ValueChanged<StudyPlanModel> onDeleteItem;
 
+  int _weekNumber(DateTime date) {
+    final DateTime target = DateTime(date.year, date.month, date.day);
+    final DateTime thursday = target.add(Duration(days: 4 - target.weekday));
+    final DateTime firstThursday = DateTime(thursday.year, 1, 4);
+    return ((thursday.difference(firstThursday).inDays) / 7).floor() + 1;
+  }
+
+  String _weekLabel(int weekday) {
+    const List<String> labels = <String>[
+      'T2',
+      'T3',
+      'T4',
+      'T5',
+      'T6',
+      'T7',
+      'CN'
+    ];
+    return labels[weekday - 1];
+  }
+
+  String _selectedDateLabel() {
+    const List<String> labels = <String>[
+      'Thứ 2',
+      'Thứ 3',
+      'Thứ 4',
+      'Thứ 5',
+      'Thứ 6',
+      'Thứ 7',
+      'Chủ nhật',
+    ];
+    return '${labels[selectedDate.weekday - 1]}, ngày ${selectedDate.day}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
         children: <Widget>[
           Row(
             children: <Widget>[
               Expanded(
                 child: Text(
-                  'Study Plan',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                  'Kế hoạch tuần',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: const Color(0xFF0F172A),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
               ),
-              TextButton(
-                onPressed: onAdd,
-                child: const Text('Add plan'),
+              StudyFlowCircleIconButton(
+                icon: Icons.add_rounded,
+                size: 44,
+                backgroundColor: StudyFlowPalette.blue,
+                foregroundColor: Colors.white,
+                onTap: onAdd,
               ),
             ],
           ),
@@ -400,6 +542,17 @@ class _PlanWeekView extends StatelessWidget {
           _PlanViewTabs(
             currentView: _PlanView.week,
             onChangeView: onChangeView,
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: Text(
+              'Tuần ${_weekNumber(selectedDate)}',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: const Color(0xFF0F172A),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
           ),
           const SizedBox(height: 18),
           Row(
@@ -409,39 +562,39 @@ class _PlanWeekView extends StatelessWidget {
                   date.day == selectedDate.day;
               return Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: InkWell(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: GestureDetector(
                     onTap: () => onSelectDate(date),
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
                         color: selected
                             ? StudyFlowPalette.blue
-                            : StudyFlowPalette.surfaceSoft,
-                        borderRadius: BorderRadius.circular(14),
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(18),
                       ),
                       child: Column(
                         children: <Widget>[
                           Text(
                             _weekLabel(date.weekday),
                             style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
                               color: selected
                                   ? Colors.white
-                                  : StudyFlowPalette.textSecondary,
+                                  : const Color(0xFF475569),
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             '${date.day}',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: selected
                                   ? Colors.white
-                                  : StudyFlowPalette.textPrimary,
+                                  : const Color(0xFF475569),
                             ),
                           ),
                         ],
@@ -452,17 +605,31 @@ class _PlanWeekView extends StatelessWidget {
               );
             }).toList(),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 24),
           Text(
-            'Plans for ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-            style: Theme.of(context).textTheme.titleLarge,
+            _selectedDateLabel(),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: const Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           if (items.isEmpty)
-            const AppEmptyState(
-              title: 'No study blocks on this day',
-              message: 'Pick another date or add a plan for this day.',
-              icon: Icons.event_busy_rounded,
+            Container(
+              height: 120,
+              decoration: BoxDecoration(
+                color: StudyFlowPalette.surfaceSoft,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'Không có kế hoạch',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: const Color(0xFF94A3B8),
+                      fontSize: 16,
+                    ),
+              ),
             )
           else
             ...items.map((StudyPlanModel plan) {
@@ -479,19 +646,6 @@ class _PlanWeekView extends StatelessWidget {
       ),
     );
   }
-
-  String _weekLabel(int weekday) {
-    const List<String> labels = <String>[
-      'Mon',
-      'Tue',
-      'Wed',
-      'Thu',
-      'Fri',
-      'Sat',
-      'Sun',
-    ];
-    return labels[weekday - 1];
-  }
 }
 
 class _PlanViewTabs extends StatelessWidget {
@@ -506,6 +660,7 @@ class _PlanViewTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 52,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: StudyFlowPalette.surfaceSoft,
@@ -514,12 +669,12 @@ class _PlanViewTabs extends StatelessWidget {
       child: Row(
         children: <Widget>[
           _PlanViewTab(
-            label: 'List',
+            label: 'Danh sách',
             selected: currentView == _PlanView.list,
             onTap: () => onChangeView(_PlanView.list),
           ),
           _PlanViewTab(
-            label: 'Week',
+            label: 'Tuần',
             selected: currentView == _PlanView.week,
             onTap: () => onChangeView(_PlanView.week),
           ),
@@ -548,7 +703,6 @@ class _PlanViewTab extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: selected ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
@@ -557,13 +711,82 @@ class _PlanViewTab extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              color: selected
-                  ? StudyFlowPalette.textPrimary
-                  : StudyFlowPalette.textSecondary,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              color:
+                  selected ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+              fontSize: 14,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PlanStatCard extends StatelessWidget {
+  const _PlanStatCard({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withValues(alpha: 0.16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: color,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: color,
+                  fontSize: 12,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactPlanEmpty extends StatelessWidget {
+  const _CompactPlanEmpty({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+      decoration: BoxDecoration(
+        color: StudyFlowPalette.surfaceSoft,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Text(
+        title,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: const Color(0xFF94A3B8),
+            ),
       ),
     );
   }
@@ -580,69 +803,132 @@ class _StudyPlanCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
+  bool get _isDone => plan.status == 'Done';
+
   @override
   Widget build(BuildContext context) {
+    final Color accent =
+        _isDone ? StudyFlowPalette.green : StudyFlowPalette.blue;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: StudyFlowSurfaceCard(
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 6,
-              height: 72,
-              decoration: BoxDecoration(
-                color: plan.status == 'Done'
-                    ? StudyFlowPalette.green
-                    : StudyFlowPalette.blue,
-                borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(24),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: StudyFlowPalette.border),
+          boxShadow: StudyFlowPalette.cardShadow,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  _isDone ? Icons.check_rounded : Icons.auto_stories_outlined,
+                  color: accent,
+                  size: 20,
+                ),
               ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    plan.title,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    plan.subjectName ?? 'General',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${plan.dateLabel} • ${plan.timeLabel}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  if (plan.topic.trim().isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 8),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            plan.title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: _isDone
+                                      ? const Color(0xFF334155)
+                                      : const Color(0xFF0F172A),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isDone ? 'Đã hoàn thành' : 'Sắp tới',
+                          style: TextStyle(
+                            color: _isDone
+                                ? StudyFlowPalette.green
+                                : const Color(0xFF1D4ED8),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
                     Text(
-                      plan.topic,
+                      plan.subjectName ?? 'Chung',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: StudyFlowPalette.textSecondary,
+                            color: _isDone
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
+                            fontSize: 14,
                           ),
                     ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: <Widget>[
+                        Text(
+                          DateTimeUtils.toDbDate(plan.planDate),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: const Color(0xFF94A3B8),
+                                    fontSize: 12,
+                                  ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          plan.timeLabel,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: const Color(0xFF94A3B8),
+                                    fontSize: 12,
+                                  ),
+                        ),
+                      ],
+                    ),
                   ],
-                ],
-              ),
-            ),
-            PopupMenuButton<String>(
-              onSelected: (String value) {
-                if (value == 'delete') {
-                  onDelete();
-                }
-              },
-              itemBuilder: (BuildContext context) => const <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(
-                  value: 'delete',
-                  child: Text('Delete'),
                 ),
-              ],
-            ),
-          ],
+              ),
+              PopupMenuButton<String>(
+                onSelected: (String value) {
+                  if (value == 'delete') {
+                    onDelete();
+                  }
+                },
+                padding: EdgeInsets.zero,
+                itemBuilder: (BuildContext context) =>
+                    const <PopupMenuEntry<String>>[
+                  PopupMenuItem<String>(
+                    value: 'delete',
+                    child: Text('Xóa kế hoạch'),
+                  ),
+                ],
+                child: const Icon(
+                  Icons.more_horiz_rounded,
+                  color: Color(0xFF94A3B8),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

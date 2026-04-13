@@ -44,7 +44,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
   Future<_SubjectsPageData> _loadData() async {
     final List<SubjectModel> subjects = await _subjectRepository.getSubjects();
-    final List<DeadlineModel> deadlines = await _deadlineRepository.getDeadlines();
+    final List<DeadlineModel> deadlines =
+        await _deadlineRepository.getDeadlines();
     return _SubjectsPageData(subjects: subjects, deadlines: deadlines);
   }
 
@@ -107,7 +108,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
               snapshot.data?.subjects ?? <SubjectModel>[];
           final List<DeadlineModel> deadlines =
               snapshot.data?.deadlines ?? <DeadlineModel>[];
-          final List<SubjectModel> filtered = subjects.where((SubjectModel subject) {
+          final List<SubjectModel> filtered =
+              subjects.where((SubjectModel subject) {
             final String haystack =
                 '${subject.name} ${subject.code}'.toLowerCase();
             return haystack.contains(_query.toLowerCase());
@@ -131,6 +133,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
                 children: <Widget>[
                   Row(
                     children: <Widget>[
+                      StudyFlowCircleIconButton(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        onTap: () => context.go('/home'),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Subjects',
@@ -143,6 +150,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
                         foregroundColor: Colors.white,
                         onTap: () async {
                           await context.push('/subjects/add');
+                          if (!mounted) return;
                           await _refresh();
                         },
                       ),
@@ -169,7 +177,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
                             message: subjects.isEmpty
                                 ? 'Add your first subject to start organizing classes and deadlines.'
                                 : 'Try a different keyword or clear the search.',
-                            actionLabel: subjects.isEmpty ? 'Add subject' : null,
+                            actionLabel:
+                                subjects.isEmpty ? 'Add subject' : null,
                             onAction: subjects.isEmpty
                                 ? () async {
                                     await context.push('/subjects/add');
@@ -191,14 +200,15 @@ class _SubjectsPageState extends State<SubjectsPage> {
                                 final int progress = subjectDeadlines.isEmpty
                                     ? 0
                                     : subjectDeadlines.fold<int>(
-                                            0,
-                                            (int sum, DeadlineModel d) =>
-                                                sum + d.progress,
-                                          ) ~/
+                                          0,
+                                          (int sum, DeadlineModel d) =>
+                                              sum + d.progress,
+                                        ) ~/
                                         subjectDeadlines.length;
                                 return InkWell(
                                   onTap: () async {
-                                    await context.push('/subjects/${subject.id}');
+                                    await context
+                                        .push('/subjects/${subject.id}');
                                     await _refresh();
                                   },
                                   borderRadius: BorderRadius.circular(20),
@@ -255,8 +265,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
                                               ),
                                             ),
                                             PopupMenuButton<String>(
-                                              onSelected:
-                                                  (String value) async {
+                                              onSelected: (String value) async {
                                                 switch (value) {
                                                   case 'edit':
                                                     await context.push(

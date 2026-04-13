@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/database/database_service.dart';
@@ -85,13 +86,41 @@ class _PomodoroPageState extends State<PomodoroPage> {
               final List<SubjectModel> subjects =
                   snapshot.data ?? <SubjectModel>[];
               final PomodoroTimerState timerState = _controller.state;
+              final String primaryActionLabel = timerState.isRunning
+                  ? 'Pause'
+                  : timerState.canResume
+                      ? 'Resume'
+                      : 'Start';
+              final String phaseActionLabel =
+                  timerState.isFocusPhase ? 'Complete' : 'Skip break';
+              final VoidCallback? phaseAction = timerState.isFocusPhase
+                  ? (timerState.hasStartedCurrentPhase
+                      ? _controller.completeCurrentFocusSession
+                      : null)
+                  : _controller.skipCurrentBreak;
               return SafeArea(
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                   children: <Widget>[
-                    Text(
-                      'Pomodoro',
-                      style: Theme.of(context).textTheme.headlineSmall,
+                    Row(
+                      children: <Widget>[
+                        IconButton(
+                          onPressed: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            } else {
+                              context.go('/home');
+                            }
+                          },
+                          icon: const Icon(Icons.arrow_back_rounded),
+                        ),
+                        Expanded(
+                          child: Text(
+                            'Pomodoro',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 20),
                     StudyFlowSurfaceCard(
@@ -149,8 +178,8 @@ class _PomodoroPageState extends State<PomodoroPage> {
                           const SizedBox(height: 20),
                           DropdownButtonFormField<int?>(
                             initialValue: timerState.selectedSubjectId,
-                            decoration:
-                                const InputDecoration(labelText: 'Focus subject'),
+                            decoration: const InputDecoration(
+                                labelText: 'Focus subject'),
                             items: <DropdownMenuItem<int?>>[
                               const DropdownMenuItem<int?>(
                                 value: null,
@@ -171,10 +200,8 @@ class _PomodoroPageState extends State<PomodoroPage> {
                             children: <Widget>[
                               Expanded(
                                 child: StudyFlowGradientButton(
-                                  label: timerState.isRunning
-                                      ? 'Pause'
-                                      : 'Start',
-                                  onTap: _controller.toggleTimer,
+                                  label: primaryActionLabel,
+                                  onTap: _controller.handlePrimaryAction,
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -187,8 +214,8 @@ class _PomodoroPageState extends State<PomodoroPage> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: StudyFlowOutlineButton(
-                                  label: 'Skip',
-                                  onTap: _controller.skipPhase,
+                                  label: phaseActionLabel,
+                                  onTap: phaseAction,
                                 ),
                               ),
                             ],

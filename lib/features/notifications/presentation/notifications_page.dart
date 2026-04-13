@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/database/database_service.dart';
@@ -162,6 +163,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: Row(
                     children: <Widget>[
+                      StudyFlowCircleIconButton(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        onTap: () {
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          } else {
+                            context.go('/home');
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Reminders',
@@ -289,9 +301,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                                 break;
                                             }
                                           },
-                                          itemBuilder:
-                                              (BuildContext context) =>
-                                                  <PopupMenuEntry<String>>[
+                                          itemBuilder: (BuildContext context) =>
+                                              <PopupMenuEntry<String>>[
                                             PopupMenuItem<String>(
                                               value: 'toggle',
                                               child: Text(

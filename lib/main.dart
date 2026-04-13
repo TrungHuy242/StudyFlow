@@ -12,11 +12,7 @@ import 'features/profile/data/user_settings_repository.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await DatabaseService.instance.init();
-  } catch (e) {
-    // Database may fail on web - continue anyway
-  }
+  await DatabaseService.instance.init();
 
   final UserSettingsRepository userSettingsRepository = UserSettingsRepository(
     DatabaseService.instance,
@@ -26,22 +22,18 @@ void main() async {
   );
   final AppRefreshNotifier appRefreshNotifier = AppRefreshNotifier();
 
-  try {
-    await sessionController.hydrate();
-  } catch (e) {
-    // Hydration may fail if database is unavailable - continue anyway
-  }
+  await sessionController.hydrate();
 
   final NotificationSyncService notificationSyncService =
       NotificationSyncService(databaseService: DatabaseService.instance);
 
-  try {
-    final settings = sessionController.settings;
-    if (settings != null && settings.notificationsEnabled) {
+  final settings = sessionController.settings;
+  if (settings != null && settings.notificationsEnabled) {
+    try {
       await notificationSyncService.syncForSettings(settings);
+    } catch (e) {
+      // Notification resync is best-effort for local reminders.
     }
-  } catch (e) {
-    // Notification resync is best-effort for local reminders.
   }
 
   runApp(
@@ -76,8 +68,10 @@ class StudyFlowBootstrap extends StatelessWidget {
         Provider<DatabaseService>.value(value: DatabaseService.instance),
         Provider<UserSettingsRepository>.value(value: userSettingsRepository),
         Provider<NotificationSyncService>.value(value: notificationSyncService),
-        ChangeNotifierProvider<AppRefreshNotifier>.value(value: appRefreshNotifier),
-        ChangeNotifierProvider<AppSessionController>.value(value: sessionController),
+        ChangeNotifierProvider<AppRefreshNotifier>.value(
+            value: appRefreshNotifier),
+        ChangeNotifierProvider<AppSessionController>.value(
+            value: sessionController),
       ],
       child: Consumer<AppSessionController>(
         builder: (BuildContext context, AppSessionController session, _) {
@@ -86,8 +80,9 @@ class StudyFlowBootstrap extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
-            themeMode:
-                session.settings?.darkMode ?? false ? ThemeMode.dark : ThemeMode.light,
+            themeMode: session.settings?.darkMode ?? false
+                ? ThemeMode.dark
+                : ThemeMode.light,
             routerConfig: _appRouter.router,
           );
         },
