@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/database/database_service.dart';
 import '../../../core/theme/studyflow_palette.dart';
 import '../../../shared/widgets/app_confirm_dialog.dart';
-import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/app_loading_state.dart';
 import '../../../shared/widgets/studyflow_components.dart';
@@ -13,6 +11,7 @@ import '../../auth/application/app_session_controller.dart';
 import '../data/notification_item_model.dart';
 import '../data/notification_repository.dart';
 import '../local_notification_service.dart';
+import 'reminder_settings_page.dart';
 import 'widgets/notification_form_sheet.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -47,61 +46,101 @@ class _NotificationsPageState extends State<NotificationsPage> {
     await _future;
   }
 
-  Future<void> _openForm() async {
-    final AppSessionController sessionController =
-        context.read<AppSessionController>();
-    final NotificationItemModel? draft =
-        await showModalBottomSheet<NotificationItemModel>(
-      context: context,
-      isScrollControlled: true,
-      builder: (BuildContext context) => const NotificationFormSheet(),
+  Future<void> _openSettings() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const ReminderSettingsPage(),
+      ),
     );
+    await _refresh();
+  }
+
+  Future<void> _openForm([NotificationItemModel? initialValue]) async {
+    final NotificationFormResult? result =
+        await Navigator.of(context).push<NotificationFormResult>(
+      MaterialPageRoute<NotificationFormResult>(
+        builder: (BuildContext context) => NotificationFormSheet(
+          initialValue: initialValue,
+        ),
+      ),
+    );
+    if (result == null) {
+      return;
+    }
+
+    if (result.deleteRequested) {
+      if (initialValue != null) {
+        await _deleteNotification(initialValue);
+      }
+      return;
+    }
+
+    final NotificationItemModel? draft = result.item;
     if (draft == null) {
       return;
     }
 
-    final NotificationItemModel saved =
-        await _repository.saveNotification(draft);
-    final int? id = saved.id;
-    if (id != null) {
-      final bool notificationsEnabled =
-          sessionController.settings?.notificationsEnabled ?? true;
-      if (!notificationsEnabled) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Reminder saved. Enable notifications in Profile to schedule it.',
-              ),
-            ),
-          );
-        }
-      } else if (saved.scheduledAt != null &&
-          saved.scheduledAt!.isAfter(DateTime.now())) {
-        await _service.schedule(
-          id: id,
-          title: saved.title,
-          body: saved.message,
-          scheduledAt: saved.scheduledAt!,
-        );
-      } else {
-        await _service.showNow(
-          id: id,
-          title: saved.title,
-          body: saved.message,
-        );
-      }
-    }
-
+    final NotificationItemModel saved = await _repository.saveNotification(draft);
+    await _applyScheduling(saved, showDisabledMessage: true);
     await _refresh();
   }
 
-  Future<void> _toggleRead(NotificationItemModel item) async {
+  Future<void> _applyScheduling(
+    NotificationItemModel item, {
+    bool showDisabledMessage = false,
+  }) async {
+    final AppSessionController sessionController =
+        context.read<AppSessionController>();
+    final bool notificationsEnabled =
+        sessionController.settings?.notificationsEnabled ?? true;
     final int? id = item.id;
     if (id == null) {
       return;
     }
-    await _repository.markRead(id, !item.isRead);
+
+    await _service.cancel(id);
+    if (!item.isEnabled) {
+      return;
+    }
+
+    if (!notificationsEnabled) {
+      if (showDisabledMessage && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Nhắc nhở đã được lưu. Bật thông báo trong Cài đặt nhắc nhở để lên lịch.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    if (item.scheduledAt != null && item.scheduledAt!.isAfter(DateTime.now())) {
+      await _service.schedule(
+        id: id,
+        title: item.title,
+        body: item.message,
+        scheduledAt: item.scheduledAt!,
+      );
+      return;
+    }
+
+    await _service.showNow(
+      id: id,
+      title: item.title,
+      body: item.message,
+    );
+  }
+
+  Future<void> _toggleEnabled(NotificationItemModel item) async {
+    final int? id = item.id;
+    if (id == null) {
+      return;
+    }
+    final bool nextValue = !item.isEnabled;
+    await _repository.markRead(id, nextValue);
+    await _applyScheduling(item.copyWith(isRead: nextValue));
     await _refresh();
   }
 
@@ -113,9 +152,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
     final bool confirmed = await AppConfirmDialog.show(
       context: context,
-      title: 'Delete reminder?',
-      message: '"${item.title}" will be removed from your reminder list.',
-      confirmLabel: 'Delete',
+      title: 'Xóa nhắc nhở?',
+      message: '"${item.title}" sẽ bị xóa khỏi danh sách nhắc nhở.',
+      confirmLabel: 'Xóa',
       destructive: true,
     );
     if (!confirmed) {
@@ -125,6 +164,42 @@ class _NotificationsPageState extends State<NotificationsPage> {
     await _repository.deleteNotification(id);
     await _service.cancel(id);
     await _refresh();
+  }
+
+  String _relativeDateLabel(DateTime? scheduledAt) {
+    if (scheduledAt == null) {
+      return 'Bây giờ';
+    }
+    final DateTime now = DateTime.now();
+    final DateTime today = DateTime(now.year, now.month, now.day);
+    final DateTime target =
+        DateTime(scheduledAt.year, scheduledAt.month, scheduledAt.day);
+    final int diff = target.difference(today).inDays;
+    if (diff == 0) {
+      return 'Hôm nay';
+    }
+    if (diff == 1) {
+      return 'Ngày mai';
+    }
+    final String day = scheduledAt.day.toString().padLeft(2, '0');
+    final String month = scheduledAt.month.toString().padLeft(2, '0');
+    return '$day/$month';
+  }
+
+  String _timeLabel(DateTime? scheduledAt) {
+    if (scheduledAt == null) {
+      return '--:--';
+    }
+    final String hour = scheduledAt.hour.toString().padLeft(2, '0');
+    final String minute = scheduledAt.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  String _summaryLabel(NotificationItemModel item) {
+    if (item.scheduledAt == null) {
+      return 'Bây giờ · ${item.repeatLabel}';
+    }
+    return '${_relativeDateLabel(item.scheduledAt)} · ${_timeLabel(item.scheduledAt)} · ${item.repeatLabel}';
   }
 
   @override
@@ -138,12 +213,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
           AsyncSnapshot<List<NotificationItemModel>> snapshot,
         ) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const AppLoadingState(message: 'Loading reminders...');
+            return const AppLoadingState(message: 'Đang tải nhắc nhở...');
           }
           if (snapshot.hasError) {
             return AppErrorState(
-              title: 'Unable to load reminders',
-              message: 'Try refreshing the reminder list.',
+              title: 'Không thể tải nhắc nhở',
+              message: 'Hãy thử làm mới danh sách nhắc nhở.',
               onAction: _refresh,
             );
           }
@@ -160,60 +235,59 @@ class _NotificationsPageState extends State<NotificationsPage> {
             child: Column(
               children: <Widget>[
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
                   child: Row(
                     children: <Widget>[
-                      StudyFlowCircleIconButton(
-                        icon: Icons.arrow_back_ios_new_rounded,
-                        onTap: () {
-                          if (Navigator.of(context).canPop()) {
-                            Navigator.of(context).pop();
-                          } else {
-                            context.go('/home');
-                          }
-                        },
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Reminders',
-                          style: Theme.of(context).textTheme.headlineSmall,
+                          'Nhắc nhở',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: const Color(0xFF0F172A),
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                              ),
                         ),
                       ),
+                      StudyFlowCircleIconButton(
+                        icon: Icons.settings_outlined,
+                        size: 40,
+                        onTap: _openSettings,
+                      ),
+                      const SizedBox(width: 10),
                       StudyFlowCircleIconButton(
                         icon: Icons.add_rounded,
                         backgroundColor: StudyFlowPalette.blue,
                         foregroundColor: Colors.white,
-                        onTap: _openForm,
+                        size: 40,
+                        onTap: () => _openForm(),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: notificationsEnabled
-                          ? StudyFlowPalette.green.withValues(alpha: 0.10)
-                          : StudyFlowPalette.orange.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      notificationsEnabled
-                          ? 'Notifications are enabled'
-                          : 'Notifications are disabled in Profile',
-                      style: TextStyle(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
                         color: notificationsEnabled
-                            ? StudyFlowPalette.green
-                            : StudyFlowPalette.orange,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                            ? const Color(0xFFEFFCF6)
+                            : const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        notificationsEnabled
+                            ? 'Thông báo đang bật'
+                            : 'Thông báo đang tắt trong cài đặt',
+                        style: TextStyle(
+                          color: notificationsEnabled
+                              ? const Color(0xFF059669)
+                              : const Color(0xFFEA580C),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -223,99 +297,69 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   child: RefreshIndicator(
                     onRefresh: _refresh,
                     child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                      padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
                       children: items.isEmpty
                           ? <Widget>[
-                              Padding(
-                                padding: const EdgeInsets.only(top: 48),
-                                child: AppEmptyState(
-                                  title: 'No reminders yet',
-                                  message:
-                                      'Create a reminder to keep important tasks visible.',
-                                  actionLabel: 'Add reminder',
-                                  onAction: _openForm,
-                                ),
+                              const SizedBox(height: 96),
+                              _ReminderEmptyState(
+                                onAdd: () => _openForm(),
                               ),
                             ]
                           : items.map((NotificationItemModel item) {
+                              final bool enabled = item.isEnabled;
                               return Padding(
-                                padding: const EdgeInsets.only(bottom: 14),
+                                padding: const EdgeInsets.only(bottom: 12),
                                 child: InkWell(
-                                  onTap: () => _toggleRead(item),
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: StudyFlowSurfaceCard(
+                                  onTap: () => _openForm(item),
+                                  borderRadius: BorderRadius.circular(22),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(22),
+                                      border: Border.all(color: StudyFlowPalette.border),
+                                      boxShadow: StudyFlowPalette.cardShadow,
+                                    ),
                                     child: Row(
                                       children: <Widget>[
-                                        Container(
-                                          width: 48,
-                                          height: 48,
-                                          decoration: BoxDecoration(
-                                            color: item.isRead
-                                                ? StudyFlowPalette.surfaceSoft
-                                                : StudyFlowPalette.blue
-                                                    .withValues(alpha: 0.12),
-                                            borderRadius:
-                                                BorderRadius.circular(16),
-                                          ),
-                                          child: Icon(
-                                            item.isRead
-                                                ? Icons
-                                                    .notifications_none_rounded
-                                                : Icons
-                                                    .notifications_active_rounded,
-                                            color: item.isRead
-                                                ? StudyFlowPalette.textMuted
-                                                : StudyFlowPalette.blue,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 14),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: <Widget>[
                                               Text(
                                                 item.title,
                                                 style: Theme.of(context)
                                                     .textTheme
-                                                    .titleMedium,
+                                                    .titleMedium
+                                                    ?.copyWith(
+                                                      color: enabled
+                                                          ? const Color(0xFF0F172A)
+                                                          : const Color(0xFF94A3B8),
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.w700,
+                                                    ),
                                               ),
-                                              const SizedBox(height: 4),
+                                              const SizedBox(height: 6),
                                               Text(
-                                                '${item.scheduleLabel} | ${item.type}',
+                                                _summaryLabel(item),
                                                 style: Theme.of(context)
                                                     .textTheme
-                                                    .bodyMedium,
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                      color: const Color(0xFF64748B),
+                                                      fontSize: 12,
+                                                    ),
                                               ),
                                             ],
                                           ),
                                         ),
-                                        PopupMenuButton<String>(
-                                          onSelected: (String value) async {
-                                            switch (value) {
-                                              case 'toggle':
-                                                await _toggleRead(item);
-                                                break;
-                                              case 'delete':
-                                                await _deleteNotification(item);
-                                                break;
-                                            }
-                                          },
-                                          itemBuilder: (BuildContext context) =>
-                                              <PopupMenuEntry<String>>[
-                                            PopupMenuItem<String>(
-                                              value: 'toggle',
-                                              child: Text(
-                                                item.isRead
-                                                    ? 'Mark as unread'
-                                                    : 'Mark as read',
-                                              ),
-                                            ),
-                                            const PopupMenuItem<String>(
-                                              value: 'delete',
-                                              child: Text('Delete'),
-                                            ),
-                                          ],
+                                        const SizedBox(width: 12),
+                                        ReminderToggle(
+                                          value: enabled,
+                                          onChanged: (_) => _toggleEnabled(item),
                                         ),
                                       ],
                                     ),
@@ -331,6 +375,58 @@ class _NotificationsPageState extends State<NotificationsPage> {
           );
         },
       ),
+    );
+  }
+}
+
+class _ReminderEmptyState extends StatelessWidget {
+  const _ReminderEmptyState({
+    required this.onAdd,
+  });
+
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        Container(
+          width: 92,
+          height: 92,
+          decoration: BoxDecoration(
+            color: StudyFlowPalette.surfaceSoft,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: const Icon(
+            Icons.notifications_none_rounded,
+            color: Color(0xFF94A3B8),
+            size: 40,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Chưa có nhắc nhở',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: const Color(0xFF0F172A),
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Tạo nhắc nhở để không bỏ lỡ các việc quan trọng.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF64748B),
+                height: 1.5,
+              ),
+        ),
+        const SizedBox(height: 24),
+        StudyFlowGradientButton(
+          label: 'Thêm nhắc nhở',
+          onTap: onAdd,
+          height: 52,
+        ),
+      ],
     );
   }
 }

@@ -27,6 +27,8 @@ class _SubjectEditorPageState extends State<SubjectEditorPage> {
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _creditsController = TextEditingController(text: '3');
   final TextEditingController _teacherController = TextEditingController();
+  final TextEditingController _roomController = TextEditingController();
+  final TextEditingController _noteController = TextEditingController();
   late final SubjectRepository _subjectRepository;
   late final SemesterRepository _semesterRepository;
   bool _initialized = false;
@@ -54,6 +56,8 @@ class _SubjectEditorPageState extends State<SubjectEditorPage> {
           _codeController.text = subject.code;
           _creditsController.text = subject.credits.toString();
           _teacherController.text = subject.teacher;
+          _roomController.text = subject.room;
+          _noteController.text = subject.note;
           _selectedColor = subject.color;
           _semesterId = subject.semesterId;
         });
@@ -74,6 +78,8 @@ class _SubjectEditorPageState extends State<SubjectEditorPage> {
     _codeController.dispose();
     _creditsController.dispose();
     _teacherController.dispose();
+    _roomController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -88,8 +94,8 @@ class _SubjectEditorPageState extends State<SubjectEditorPage> {
         color: _selectedColor,
         credits: int.parse(_creditsController.text.trim()),
         teacher: _teacherController.text.trim(),
-        room: '',
-        note: '',
+        room: _roomController.text.trim(),
+        note: _noteController.text.trim(),
       ),
     );
     if (!mounted) return;
@@ -187,6 +193,19 @@ class _SubjectEditorPageState extends State<SubjectEditorPage> {
                   controller: _teacherController,
                   label: 'Giảng viên',
                   hintText: 'Tên giảng viên',
+                ),
+                const SizedBox(height: 14),
+                StudyFlowInput(
+                  controller: _roomController,
+                  label: 'Phòng',
+                  hintText: 'VD: A1-204',
+                ),
+                const SizedBox(height: 14),
+                StudyFlowInput(
+                  controller: _noteController,
+                  label: 'Ghi chú',
+                  hintText: 'Thêm ghi chú cho môn học',
+                  maxLines: 4,
                 ),
                 const SizedBox(height: 20),
                 Text('Preview', style: Theme.of(context).textTheme.titleSmall),

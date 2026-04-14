@@ -31,6 +31,11 @@ class NotificationSyncService {
         continue;
       }
 
+      if (!item.isEnabled) {
+        await _localNotificationService.cancel(id);
+        continue;
+      }
+
       if (item.scheduledAt == null || !item.scheduledAt!.isAfter(now)) {
         await _localNotificationService.cancel(id);
         continue;
