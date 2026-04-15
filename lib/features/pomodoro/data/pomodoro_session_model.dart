@@ -1,3 +1,4 @@
+import '../../../core/utils/database_value_utils.dart';
 import '../../../core/utils/date_time_utils.dart';
 
 class PomodoroSessionModel {
@@ -37,11 +38,11 @@ class PomodoroSessionModel {
 
   factory PomodoroSessionModel.fromMap(Map<String, Object?> map) {
     return PomodoroSessionModel(
-      id: map['id'] as int?,
-      subjectId: map['subject_id'] as int?,
+      id: DatabaseValueUtils.asNullableInt(map['id']),
+      subjectId: DatabaseValueUtils.asNullableInt(map['subject_id']),
       subjectName: map['subject_name'] as String?,
       sessionDate: DateTimeUtils.fromDbDate(map['session_date'] as String),
-      duration: map['duration'] as int? ?? 0,
+      duration: DatabaseValueUtils.asInt(map['duration']),
       type: map['type'] as String? ?? 'Focus',
       completedAt: map['completed_at'] == null
           ? null

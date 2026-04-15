@@ -1,3 +1,4 @@
+import '../../../core/utils/database_value_utils.dart';
 import '../../../core/utils/date_time_utils.dart';
 
 class NotificationItemModel {
@@ -80,15 +81,15 @@ class NotificationItemModel {
 
   factory NotificationItemModel.fromMap(Map<String, Object?> map) {
     return NotificationItemModel(
-      id: map['id'] as int?,
+      id: DatabaseValueUtils.asNullableInt(map['id']),
       type: map['type'] as String? ?? 'general',
       title: map['title'] as String? ?? '',
       message: map['message'] as String? ?? '',
       scheduledAt: map['scheduled_at'] == null
           ? null
           : DateTimeUtils.fromDbDateTime(map['scheduled_at'] as String),
-      isRead: (map['is_read'] as int? ?? 0) == 1,
-      relatedId: map['related_id'] as int?,
+      isRead: DatabaseValueUtils.asBool(map['is_read']),
+      relatedId: DatabaseValueUtils.asNullableInt(map['related_id']),
     );
   }
 }

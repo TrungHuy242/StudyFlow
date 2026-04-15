@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'core/database/database_service.dart';
+import 'core/migration/legacy_sqlite_migration_service.dart';
 import 'core/routes/app_router.dart';
 import 'core/state/app_refresh_notifier.dart';
 import 'core/theme/app_theme.dart';
@@ -13,12 +14,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await DatabaseService.instance.init();
+  final LegacySqliteMigrationService migrationService =
+      LegacySqliteMigrationService(DatabaseService.instance);
 
   final UserSettingsRepository userSettingsRepository = UserSettingsRepository(
     DatabaseService.instance,
   );
   final AppSessionController sessionController = AppSessionController(
     userSettingsRepository,
+    migrationService,
   );
   final AppRefreshNotifier appRefreshNotifier = AppRefreshNotifier();
 
@@ -28,7 +32,9 @@ void main() async {
       NotificationSyncService(databaseService: DatabaseService.instance);
 
   final settings = sessionController.settings;
-  if (settings != null && settings.notificationsEnabled) {
+  if (settings != null &&
+      settings.isAuthenticated &&
+      settings.notificationsEnabled) {
     try {
       await notificationSyncService.syncForSettings(settings);
     } catch (e) {

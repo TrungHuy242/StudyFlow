@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/database_value_utils.dart';
 
 class ScheduleModel {
   const ScheduleModel({
@@ -72,13 +73,19 @@ class ScheduleModel {
 
   factory ScheduleModel.fromMap(Map<String, Object?> map) {
     return ScheduleModel(
-      id: map['id'] as int?,
-      subjectId: map['subject_id'] as int? ?? 0,
+      id: DatabaseValueUtils.asNullableInt(map['id']),
+      subjectId: DatabaseValueUtils.asInt(map['subject_id']),
       subjectName: map['subject_name'] as String?,
       subjectColor: map['subject_color'] as String?,
-      weekday: map['weekday'] as int? ?? 1,
-      startTime: map['start_time'] as String? ?? '08:00',
-      endTime: map['end_time'] as String? ?? '09:00',
+      weekday: DatabaseValueUtils.asInt(map['weekday'], fallback: 1),
+      startTime: DatabaseValueUtils.normalizeTimeString(
+        map['start_time'],
+        fallback: '08:00',
+      ),
+      endTime: DatabaseValueUtils.normalizeTimeString(
+        map['end_time'],
+        fallback: '09:00',
+      ),
       room: map['room'] as String? ?? '',
       type: map['type'] as String? ?? 'Lecture',
     );

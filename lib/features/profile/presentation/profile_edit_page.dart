@@ -64,8 +64,21 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       email: _emailController.text.trim(),
     );
 
-    await repository.saveSettings(updated);
-    await session.refreshSettings();
+    try {
+      await repository.saveSettings(updated);
+      await session.refreshSettings();
+    } on FormatException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _saving = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+      return;
+    }
 
     if (!mounted) {
       return;

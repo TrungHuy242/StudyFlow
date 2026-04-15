@@ -453,17 +453,20 @@ String profileInitials(String name) {
 }
 
 String profileStudentId(UserSettingsModel settings) {
-  final RegExp digits = RegExp(r'\d{6,}');
-  final RegExpMatch? match = digits.firstMatch(settings.email);
-  if (match != null) {
-    return 'SV${match.group(0)}';
+  final String studentCode = (settings.studentCode ?? '').trim();
+  if (studentCode.isNotEmpty) {
+    return studentCode;
   }
   return 'B21DCCN123';
 }
 
 String profileJoinDate(UserSettingsModel settings) {
-  if (settings.onboardingDone) {
-    return '2024-09-01';
+  final DateTime? joinedAt = settings.joinedAt;
+  if (joinedAt != null) {
+    final String year = joinedAt.year.toString().padLeft(4, '0');
+    final String month = joinedAt.month.toString().padLeft(2, '0');
+    final String day = joinedAt.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
   }
   return '2026-04-14';
 }

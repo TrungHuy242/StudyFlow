@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/database/database_service.dart';
@@ -351,16 +352,9 @@ class _PomodoroIdleView extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
           children: <Widget>[
-            const SizedBox(height: 4),
-            const Center(
-              child: Text(
-                'Focus Timer',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+            const _PomodoroBackHeader(
+              title: 'Focus Timer',
+              titleFontSize: 24,
             ),
             const SizedBox(height: 8),
             Center(
@@ -563,7 +557,8 @@ class _PomodoroActiveView extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
           child: Column(
             children: <Widget>[
-              const SizedBox(height: 4),
+              const _PomodoroBackHeader(),
+              const SizedBox(height: 12),
               Text(
                 title,
                 style: const TextStyle(
@@ -741,6 +736,8 @@ class _PomodoroCompletionView extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
           child: Column(
             children: <Widget>[
+              const _PomodoroBackHeader(),
+              const SizedBox(height: 8),
               const Spacer(),
               Container(
                 width: 132,
@@ -1090,6 +1087,50 @@ class _PomodoroRing extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PomodoroBackHeader extends StatelessWidget {
+  const _PomodoroBackHeader({
+    this.title,
+    this.titleFontSize = 20,
+  });
+
+  final String? title;
+  final double titleFontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        StudyFlowCircleIconButton(
+          icon: Icons.arrow_back_ios_new_rounded,
+          backgroundColor: Colors.white.withValues(alpha: 0.12),
+          foregroundColor: Colors.white,
+          onTap: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
+        Expanded(
+          child: title == null
+              ? const SizedBox.shrink()
+              : Text(
+                  title!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+        ),
+        const SizedBox(width: 40),
+      ],
     );
   }
 }

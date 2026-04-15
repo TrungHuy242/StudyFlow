@@ -20,11 +20,52 @@ class DateTimeUtils {
 
   static String toDbDate(DateTime value) => _dbDateFormat.format(value);
 
-  static DateTime fromDbDate(String value) => _dbDateFormat.parse(value);
+  static DateTime fromDbDate(String value) {
+    final String trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      throw const FormatException('Cannot parse empty database date.');
+    }
+    if (trimmed.contains('T') || trimmed.contains(' ')) {
+      final DateTime parsed = DateTime.parse(trimmed).toLocal();
+      return DateTime(parsed.year, parsed.month, parsed.day);
+    }
+    return _dbDateFormat.parse(trimmed);
+  }
 
   static String toDbDateTime(DateTime value) => _dbDateTimeFormat.format(value);
 
-  static DateTime fromDbDateTime(String value) => _dbDateTimeFormat.parse(value);
+  static DateTime fromDbDateTime(String value) {
+    final String trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      throw const FormatException('Cannot parse empty database date time.');
+    }
+    try {
+      return DateTime.parse(trimmed).toLocal();
+    } on FormatException {
+      return _dbDateTimeFormat.parse(trimmed);
+    }
+  }
+
+  static DateTime? tryParse(Object? value) {
+    final String raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) {
+      return null;
+    }
+
+    try {
+      return DateTime.parse(raw).toLocal();
+    } on FormatException {
+      try {
+        return _dbDateTimeFormat.parse(raw);
+      } on FormatException {
+        try {
+          return _dbDateFormat.parse(raw);
+        } on FormatException {
+          return null;
+        }
+      }
+    }
+  }
 
   static String formatDate(DateTime value) => _friendlyDateFormat.format(value);
 

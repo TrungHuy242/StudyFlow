@@ -43,9 +43,21 @@ class _ProfileAppSettingsPageState extends State<ProfileAppSettingsPage> {
 
     final UserSettingsModel updated =
         current.copyWith(notificationsEnabled: value);
-    await repository.saveSettings(updated);
-    await syncService.syncForSettings(updated);
-    await session.refreshSettings();
+    try {
+      await repository.saveSettings(updated);
+      await syncService.syncForSettings(updated);
+      await session.refreshSettings();
+    } on FormatException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _soundEnabled = current.notificationsEnabled;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
   }
 
   Future<void> _editMinutes({
@@ -78,8 +90,17 @@ class _ProfileAppSettingsPageState extends State<ProfileAppSettingsPage> {
     if (current == null) {
       return;
     }
-    await repository.saveSettings(current.copyWith(focusDuration: value));
-    await session.refreshSettings();
+    try {
+      await repository.saveSettings(current.copyWith(focusDuration: value));
+      await session.refreshSettings();
+    } on FormatException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
   }
 
   Future<void> _updateShortBreakDuration(int value) async {
@@ -90,8 +111,19 @@ class _ProfileAppSettingsPageState extends State<ProfileAppSettingsPage> {
     if (current == null) {
       return;
     }
-    await repository.saveSettings(current.copyWith(shortBreakDuration: value));
-    await session.refreshSettings();
+    try {
+      await repository.saveSettings(
+        current.copyWith(shortBreakDuration: value),
+      );
+      await session.refreshSettings();
+    } on FormatException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
   }
 
   Future<void> _updateLongBreakDuration(int value) async {
@@ -102,8 +134,17 @@ class _ProfileAppSettingsPageState extends State<ProfileAppSettingsPage> {
     if (current == null) {
       return;
     }
-    await repository.saveSettings(current.copyWith(longBreakDuration: value));
-    await session.refreshSettings();
+    try {
+      await repository.saveSettings(current.copyWith(longBreakDuration: value));
+      await session.refreshSettings();
+    } on FormatException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
   }
 
   Future<void> _updateStudyGoal(int value) async {
@@ -114,8 +155,17 @@ class _ProfileAppSettingsPageState extends State<ProfileAppSettingsPage> {
     if (current == null) {
       return;
     }
-    await repository.saveSettings(current.copyWith(studyGoalMinutes: value));
-    await session.refreshSettings();
+    try {
+      await repository.saveSettings(current.copyWith(studyGoalMinutes: value));
+      await session.refreshSettings();
+    } on FormatException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
   }
 
   @override

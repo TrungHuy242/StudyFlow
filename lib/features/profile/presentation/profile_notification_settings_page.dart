@@ -50,9 +50,23 @@ class _ProfileNotificationSettingsPageState
 
     final UserSettingsModel updated =
         current.copyWith(notificationsEnabled: value);
-    await repository.saveSettings(updated);
-    await syncService.syncForSettings(updated);
-    await session.refreshSettings();
+    try {
+      await repository.saveSettings(updated);
+      await syncService.syncForSettings(updated);
+      await session.refreshSettings();
+    } on FormatException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _saving = false;
+        _enabled = current.notificationsEnabled;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+      return;
+    }
 
     if (!mounted) {
       return;

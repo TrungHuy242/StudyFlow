@@ -3,10 +3,10 @@ import 'package:sqflite/sqflite.dart';
 
 import '../constants/app_constants.dart';
 
-class DatabaseService {
-  DatabaseService._();
+class LegacyDatabaseService {
+  LegacyDatabaseService._();
 
-  static final DatabaseService instance = DatabaseService._();
+  static final LegacyDatabaseService instance = LegacyDatabaseService._();
   Database? _database;
 
   Future<Database> get database async {
@@ -16,8 +16,8 @@ class DatabaseService {
   }
 
   Future<Database> init() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, AppConstants.databaseName);
+    final String dbPath = await getDatabasesPath();
+    final String path = join(dbPath, AppConstants.databaseName);
 
     _database = await openDatabase(
       path,

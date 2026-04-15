@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/database_value_utils.dart';
 import '../../../core/utils/date_time_utils.dart';
 
 class NoteModel {
@@ -41,8 +42,8 @@ class NoteModel {
 
   factory NoteModel.fromMap(Map<String, Object?> map) {
     return NoteModel(
-      id: map['id'] as int?,
-      subjectId: map['subject_id'] as int?,
+      id: DatabaseValueUtils.asNullableInt(map['id']),
+      subjectId: DatabaseValueUtils.asNullableInt(map['subject_id']),
       subjectName: map['subject_name'] as String?,
       title: map['title'] as String? ?? '',
       content: map['content'] as String? ?? '',

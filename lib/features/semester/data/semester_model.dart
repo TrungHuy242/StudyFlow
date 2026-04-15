@@ -1,4 +1,5 @@
 import '../../../core/utils/date_time_utils.dart';
+import '../../../core/utils/database_value_utils.dart';
 
 class SemesterModel {
   const SemesterModel({
@@ -46,11 +47,11 @@ class SemesterModel {
 
   factory SemesterModel.fromMap(Map<String, Object?> map) {
     return SemesterModel(
-      id: map['id'] as int?,
+      id: DatabaseValueUtils.asNullableInt(map['id']),
       name: map['name'] as String? ?? '',
       startDate: DateTimeUtils.fromDbDate(map['start_date'] as String),
       endDate: DateTimeUtils.fromDbDate(map['end_date'] as String),
-      isActive: (map['is_active'] as int? ?? 0) == 1,
+      isActive: DatabaseValueUtils.asBool(map['is_active']),
     );
   }
 }

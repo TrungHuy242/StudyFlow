@@ -4,10 +4,10 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 import '../constants/app_constants.dart';
 
-class DatabaseService {
-  DatabaseService._();
+class LegacyDatabaseService {
+  LegacyDatabaseService._();
 
-  static final DatabaseService instance = DatabaseService._();
+  static final LegacyDatabaseService instance = LegacyDatabaseService._();
   Database? _database;
   final DatabaseFactory _dbFactory = createDatabaseFactoryFfiWeb(
     options: SqfliteFfiWebOptions(
@@ -175,8 +175,7 @@ class DatabaseService {
 
   Future<void> _upgradeSchema(Database db, int oldVersion) async {
     if (oldVersion < 2) {
-      await db
-          .execute('ALTER TABLE user_settings ADD COLUMN local_password TEXT');
+      await db.execute('ALTER TABLE user_settings ADD COLUMN local_password TEXT');
       await db.execute(
         'ALTER TABLE user_settings ADD COLUMN is_logged_in INTEGER NOT NULL DEFAULT 0',
       );
@@ -204,7 +203,7 @@ class DatabaseService {
     );
 
     if (result.isEmpty) {
-      await db.insert('user_settings', {
+      await db.insert('user_settings', <String, Object?>{
         'id': 1,
         'display_name': 'Student',
         'email': null,

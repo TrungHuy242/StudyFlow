@@ -1,6 +1,6 @@
-import 'package:sqflite/sqflite.dart';
-
 import '../../../core/database/database_service.dart';
+import '../../../core/data/user_scope.dart';
+import '../../../core/utils/database_value_utils.dart';
 import 'study_plan_model.dart';
 
 class StudyPlanRepository {
@@ -9,47 +9,95 @@ class StudyPlanRepository {
   final DatabaseService _databaseService;
 
   Future<List<StudyPlanModel>> getPlans() async {
-    final Database database = await _databaseService.database;
-    final List<Map<String, Object?>> result = await database.rawQuery('''
-      SELECT study_plans.*, subjects.name as subject_name, subjects.color as subject_color
-      FROM study_plans
-      LEFT JOIN subjects ON subjects.id = study_plans.subject_id
-      ORDER BY study_plans.plan_date ASC, study_plans.start_time ASC
-    ''');
-    return result.map(StudyPlanModel.fromMap).toList();
+    final String userId = _databaseService.requireUserId();
+    final int minId = UserScope.baseForUser(userId);
+    final int maxId = UserScope.upperBoundForUser(userId);
+    final List<dynamic> result = await _databaseService.client
+        .from('study_plans')
+        .select('id, subject_id, title, plan_date, start_time, end_time, duration, topic, status, subjects(name, color)')
+        .gte('id', minId)
+        .lt('id', maxId)
+        .order('plan_date')
+        .order('start_time');
+    return result
+        .map((dynamic item) => _fromRow(Map<String, dynamic>.from(item as Map)))
+        .toList();
   }
 
   Future<StudyPlanModel?> getPlanById(int id) async {
-    final List<StudyPlanModel> plans = await getPlans();
-    for (final StudyPlanModel plan in plans) {
-      if (plan.id == id) {
-        return plan;
-      }
+    final String userId = _databaseService.requireUserId();
+    final int minId = UserScope.baseForUser(userId);
+    final int maxId = UserScope.upperBoundForUser(userId);
+    final dynamic result = await _databaseService.client
+        .from('study_plans')
+        .select('id, subject_id, title, plan_date, start_time, end_time, duration, topic, status, subjects(name, color)')
+        .gte('id', minId)
+        .lt('id', maxId)
+        .eq('id', id)
+        .maybeSingle();
+    if (result == null) {
+      return null;
     }
-    return null;
+    return _fromRow(Map<String, dynamic>.from(result as Map));
   }
 
   Future<void> savePlan(StudyPlanModel plan) async {
-    final Database database = await _databaseService.database;
+    final String userId = _databaseService.requireUserId();
+    final int minId = UserScope.baseForUser(userId);
+    final int maxId = UserScope.upperBoundForUser(userId);
+    final Map<String, Object?> payload = <String, Object?>{
+      'subject_id': plan.subjectId,
+      'title': plan.title,
+      'plan_date': plan.toMap()['plan_date'],
+      'start_time': plan.startTime,
+      'end_time': plan.endTime,
+      'duration': plan.duration,
+      'topic': plan.topic,
+      'status': plan.status,
+    };
     if (plan.id == null) {
-      await database.insert('study_plans', plan.toMap()..remove('id'));
+      await _databaseService.client.from('study_plans').insert(<String, Object?>{
+        'id': UserScope.generateId(userId),
+        ...payload,
+      });
       return;
     }
 
-    await database.update(
-      'study_plans',
-      plan.toMap()..remove('id'),
-      where: 'id = ?',
-      whereArgs: <Object?>[plan.id],
-    );
+    await _databaseService.client
+        .from('study_plans')
+        .update(payload)
+        .gte('id', minId)
+        .lt('id', maxId)
+        .eq('id', plan.id!);
   }
 
   Future<void> deletePlan(int id) async {
-    final Database database = await _databaseService.database;
-    await database.delete(
-      'study_plans',
-      where: 'id = ?',
-      whereArgs: <Object?>[id],
-    );
+    final String userId = _databaseService.requireUserId();
+    final int minId = UserScope.baseForUser(userId);
+    final int maxId = UserScope.upperBoundForUser(userId);
+    await _databaseService.client
+        .from('study_plans')
+        .delete()
+        .gte('id', minId)
+        .lt('id', maxId)
+        .eq('id', id);
+  }
+
+  StudyPlanModel _fromRow(Map<String, dynamic> row) {
+    final Map<String, dynamic>? subject =
+        row['subjects'] is Map ? Map<String, dynamic>.from(row['subjects'] as Map) : null;
+    return StudyPlanModel.fromMap(<String, Object?>{
+      'id': DatabaseValueUtils.asNullableInt(row['id']),
+      'subject_id': DatabaseValueUtils.asNullableInt(row['subject_id']),
+      'subject_name': subject?['name'] as String?,
+      'subject_color': subject?['color'] as String?,
+      'title': row['title'] as String?,
+      'plan_date': row['plan_date']?.toString(),
+      'start_time': row['start_time']?.toString(),
+      'end_time': row['end_time']?.toString(),
+      'duration': DatabaseValueUtils.asInt(row['duration'], fallback: 60),
+      'topic': row['topic'] as String?,
+      'status': row['status'] as String?,
+    });
   }
 }

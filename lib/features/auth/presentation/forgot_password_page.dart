@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../../../shared/widgets/studyflow_components.dart';
 import '../application/app_session_controller.dart';
-import 'auth_flow_payloads.dart';
 import 'widgets/auth_scaffold.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -17,6 +16,7 @@ class ForgotPasswordPage extends StatefulWidget {
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -24,27 +24,42 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     super.dispose();
   }
 
-  void _continue() {
+  Future<void> _continue() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final String email = _emailController.text.trim();
-    final String storedEmail =
-        context.read<AppSessionController>().settings?.email.trim().toLowerCase() ?? '';
-    if (storedEmail.isNotEmpty && storedEmail != email.toLowerCase()) {
+    setState(() {
+      _submitting = true;
+    });
+
+    try {
+      await context.read<AppSessionController>().requestPasswordReset(
+            email: _emailController.text.trim(),
+          );
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('This email is not registered on this device.'),
+          content: Text('Email đặt lại mật khẩu đã được gửi.'),
         ),
       );
-      return;
+      context.go('/login');
+    } on FormatException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+        });
+      }
     }
-
-    context.push(
-      '/verify-email',
-      extra: ResetPasswordDraft(email: email),
-    );
   }
 
   @override
@@ -72,8 +87,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             ),
             const SizedBox(height: 28),
             StudyFlowGradientButton(
-              label: 'Send verification code',
-              onTap: _continue,
+              label: _submitting ? 'Đang gửi...' : 'Send verification code',
+              onTap: _submitting ? null : _continue,
             ),
           ],
         ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/application/app_session_controller.dart';
-import '../data/user_settings_model.dart';
 import '../data/user_settings_repository.dart';
 import 'widgets/profile_components.dart';
 
@@ -39,8 +38,7 @@ class _ProfileChangePasswordPageState extends State<ProfileChangePasswordPage> {
     final AppSessionController session = context.read<AppSessionController>();
     final UserSettingsRepository repository =
         context.read<UserSettingsRepository>();
-    final UserSettingsModel? current = session.settings;
-    if (current == null) {
+    if (session.settings == null) {
       return;
     }
 
@@ -48,11 +46,24 @@ class _ProfileChangePasswordPageState extends State<ProfileChangePasswordPage> {
       _saving = true;
     });
 
-    final UserSettingsModel updated = current.copyWith(
-      localPassword: _newPasswordController.text.trim(),
-    );
-    await repository.saveSettings(updated);
-    await session.refreshSettings();
+    try {
+      await repository.changePassword(
+        currentPassword: _currentPasswordController.text.trim(),
+        newPassword: _newPasswordController.text.trim(),
+      );
+      await session.refreshSettings();
+    } on FormatException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _saving = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+      return;
+    }
 
     if (!mounted) {
       return;
@@ -66,8 +77,7 @@ class _ProfileChangePasswordPageState extends State<ProfileChangePasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    final UserSettingsModel? settings =
-        context.watch<AppSessionController>().settings;
+    final settings = context.watch<AppSessionController>().settings;
     if (settings == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -89,11 +99,8 @@ class _ProfileChangePasswordPageState extends State<ProfileChangePasswordPage> {
                   hintText: 'Nhập mật khẩu hiện tại',
                   obscureText: true,
                   validator: (String? value) {
-                    if ((settings.localPassword ?? '').isEmpty) {
-                      return null;
-                    }
-                    if (value == null || value != settings.localPassword) {
-                      return 'Mật khẩu hiện tại chưa đúng';
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Nhập mật khẩu hiện tại';
                     }
                     return null;
                   },

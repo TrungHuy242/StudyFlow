@@ -57,8 +57,20 @@ class _ProfileThemePageState extends State<ProfileThemePage> {
     final UserSettingsModel updated = current.copyWith(
       darkMode: value == _ThemeChoice.dark,
     );
-    await repository.saveSettings(updated);
-    await session.refreshSettings();
+    try {
+      await repository.saveSettings(updated);
+      await session.refreshSettings();
+    } on FormatException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _choice = current.darkMode ? _ThemeChoice.dark : _ThemeChoice.light;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
   }
 
   @override

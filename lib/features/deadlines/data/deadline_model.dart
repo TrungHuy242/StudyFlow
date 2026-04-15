@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/database_value_utils.dart';
 import '../../../core/utils/date_time_utils.dart';
 
 class DeadlineModel {
@@ -92,17 +93,19 @@ class DeadlineModel {
 
   factory DeadlineModel.fromMap(Map<String, Object?> map) {
     return DeadlineModel(
-      id: map['id'] as int?,
-      subjectId: map['subject_id'] as int?,
+      id: DatabaseValueUtils.asNullableInt(map['id']),
+      subjectId: DatabaseValueUtils.asNullableInt(map['subject_id']),
       subjectName: map['subject_name'] as String?,
       subjectColor: map['subject_color'] as String?,
       title: map['title'] as String? ?? '',
       description: map['description'] as String? ?? '',
       dueDate: DateTimeUtils.fromDbDate(map['due_date'] as String),
-      dueTime: map['due_time'] as String?,
+      dueTime: map['due_time'] == null
+          ? null
+          : DatabaseValueUtils.normalizeTimeString(map['due_time']),
       priority: map['priority'] as String? ?? 'Medium',
       status: map['status'] as String? ?? 'Planned',
-      progress: map['progress'] as int? ?? 0,
+      progress: DatabaseValueUtils.asInt(map['progress']),
     );
   }
 }

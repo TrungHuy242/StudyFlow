@@ -20,8 +20,11 @@ class OtpVerificationPage extends StatefulWidget {
 }
 
 class _OtpVerificationPageState extends State<OtpVerificationPage> {
+  static const String _acceptedOtpCode = '123456';
+
   late final List<TextEditingController> _controllers;
   late final List<FocusNode> _focusNodes;
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -45,25 +48,49 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   }
 
   Future<void> _verify() async {
-    final String code = _controllers.map((TextEditingController c) => c.text).join();
-    if (code.length != 6) {
+    final String code = _controllers
+        .map((TextEditingController controller) => controller.text)
+        .join();
+    if (code != _acceptedOtpCode) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter the full 6-digit code.')),
+        const SnackBar(
+          content: Text('Mã OTP không đúng. Vui lòng nhập 123456.'),
+        ),
       );
       return;
     }
 
     final Object? payload = widget.payload;
     if (payload is RegisterDraft) {
-      await context.read<AppSessionController>().register(
-            displayName: payload.displayName,
-            email: payload.email,
-            password: payload.password,
-          );
-      if (!mounted) {
-        return;
+      setState(() {
+        _submitting = true;
+      });
+
+      try {
+        await context.read<AppSessionController>().register(
+              displayName: payload.displayName,
+              studentCode: payload.studentCode,
+              email: payload.email,
+              password: payload.password,
+            );
+        if (!mounted) {
+          return;
+        }
+        context.go('/home');
+      } on FormatException catch (error) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message)),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _submitting = false;
+          });
+        }
       }
-      context.go('/home');
       return;
     }
 
@@ -92,6 +119,14 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     if (value.isEmpty && index > 0) {
       _focusNodes[index - 1].requestFocus();
     }
+  }
+
+  void _resendFakeOtp() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã gửi lại OTP giả lập. Mã phát triển vẫn là 123456.'),
+      ),
+    );
   }
 
   @override
@@ -123,21 +158,17 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           ),
           const SizedBox(height: 18),
           Text(
-            'Code expires in 02:00',
+            'Mã phát triển: 123456',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 28),
           StudyFlowGradientButton(
-            label: 'Verify',
-            onTap: _verify,
+            label: _submitting ? 'Đang xác nhận...' : 'Verify',
+            onTap: _submitting ? null : _verify,
           ),
           const SizedBox(height: 20),
           TextButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Verification code sent again.')),
-              );
-            },
+            onPressed: _resendFakeOtp,
             child: const Text("Didn't receive the code? Resend"),
           ),
         ],

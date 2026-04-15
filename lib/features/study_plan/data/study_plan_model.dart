@@ -1,3 +1,4 @@
+import '../../../core/utils/database_value_utils.dart';
 import '../../../core/utils/date_time_utils.dart';
 
 class StudyPlanModel {
@@ -52,15 +53,19 @@ class StudyPlanModel {
 
   factory StudyPlanModel.fromMap(Map<String, Object?> map) {
     return StudyPlanModel(
-      id: map['id'] as int?,
-      subjectId: map['subject_id'] as int?,
+      id: DatabaseValueUtils.asNullableInt(map['id']),
+      subjectId: DatabaseValueUtils.asNullableInt(map['subject_id']),
       subjectName: map['subject_name'] as String?,
       subjectColor: map['subject_color'] as String?,
       title: map['title'] as String? ?? '',
       planDate: DateTimeUtils.fromDbDate(map['plan_date'] as String),
-      startTime: map['start_time'] as String?,
-      endTime: map['end_time'] as String?,
-      duration: map['duration'] as int? ?? 60,
+      startTime: map['start_time'] == null
+          ? null
+          : DatabaseValueUtils.normalizeTimeString(map['start_time']),
+      endTime: map['end_time'] == null
+          ? null
+          : DatabaseValueUtils.normalizeTimeString(map['end_time']),
+      duration: DatabaseValueUtils.asInt(map['duration'], fallback: 60),
       topic: map['topic'] as String? ?? '',
       status: map['status'] as String? ?? 'Planned',
     );
