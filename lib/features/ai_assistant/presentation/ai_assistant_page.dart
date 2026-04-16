@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -746,47 +747,50 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
                           ),
                   ),
                   const SizedBox(height: 14),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: StudyFlowPalette.border),
-                      boxShadow: StudyFlowPalette.cardShadow,
-                    ),
-                    padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: <Widget>[
-                        Expanded(
-                          child: TextField(
-                            controller: _controller,
-                            minLines: 1,
-                            maxLines: 4,
-                            textInputAction: TextInputAction.send,
-                            decoration: const InputDecoration(
-                              hintText: 'Hỏi về tình hình học tập của bạn...',
-                              border: InputBorder.none,
-                              isCollapsed: true,
-                            ),
-                            onSubmitted: (_) => _sendMessage(),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        DecoratedBox(
-                          decoration: const BoxDecoration(
-                            gradient: StudyFlowPalette.primaryButtonGradient,
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            onPressed: _isSending ? null : _sendMessage,
-                            icon: const Icon(
-                              Icons.send_rounded,
-                              color: Colors.white,
-                              size: 18,
+                  Padding(
+                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: StudyFlowPalette.border),
+                        boxShadow: StudyFlowPalette.cardShadow,
+                      ),
+                      padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: <Widget>[
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              minLines: 1,
+                              maxLines: 4,
+                              textInputAction: TextInputAction.send,
+                              decoration: const InputDecoration(
+                                hintText: 'Hỏi về tình hình học tập của bạn...',
+                                border: InputBorder.none,
+                                isCollapsed: true,
+                              ),
+                              onSubmitted: (_) => _sendMessage(),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          DecoratedBox(
+                            decoration: const BoxDecoration(
+                              gradient: StudyFlowPalette.primaryButtonGradient,
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              onPressed: _isSending ? null : _sendMessage,
+                              icon: const Icon(
+                                Icons.send_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -813,10 +817,11 @@ class _MessageBubble extends StatelessWidget {
     final Color textColor =
         message.isUser ? Colors.white : StudyFlowPalette.textPrimary;
 
+    final double maxBubbleWidth = min(320, MediaQuery.of(context).size.width * 0.82);
     return Align(
       alignment: alignment,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 320),
+        constraints: BoxConstraints(maxWidth: maxBubbleWidth),
         child: Container(
           decoration: BoxDecoration(
             color: bubbleColor,

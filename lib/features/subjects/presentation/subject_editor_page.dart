@@ -158,87 +158,97 @@ class _SubjectEditorPageState extends State<SubjectEditorPage> {
                   }).toList(),
                 ),
                 const SizedBox(height: 18),
-                StudyFlowInput(
-                  controller: _nameController,
-                  label: 'Tên môn học',
-                  hintText: 'VD: UX/UI Design',
-                  validator: (String? value) => value == null || value.trim().isEmpty ? 'Nhập tên môn học.' : null,
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: StudyFlowInput(
-                        controller: _codeController,
-                        label: 'Mã môn',
-                        hintText: 'VD: CS401',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: StudyFlowInput(
-                        controller: _creditsController,
-                        label: 'Số tín chỉ',
-                        keyboardType: TextInputType.number,
-                        validator: (String? value) {
-                          final int? credits = int.tryParse(value ?? '');
-                          return credits == null || credits <= 0 ? 'Không hợp lệ' : null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                StudyFlowInput(
-                  controller: _teacherController,
-                  label: 'Giảng viên',
-                  hintText: 'Tên giảng viên',
-                ),
-                const SizedBox(height: 14),
-                StudyFlowInput(
-                  controller: _roomController,
-                  label: 'Phòng',
-                  hintText: 'VD: A1-204',
-                ),
-                const SizedBox(height: 14),
-                StudyFlowInput(
-                  controller: _noteController,
-                  label: 'Ghi chú',
-                  hintText: 'Thêm ghi chú cho môn học',
-                  maxLines: 4,
-                ),
-                const SizedBox(height: 20),
-                Text('Preview', style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 10),
-                StudyFlowSurfaceCard(
-                  child: Row(
-                    children: <Widget>[
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: previewColor,
-                          borderRadius: BorderRadius.circular(18),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        StudyFlowInput(
+                          controller: _nameController,
+                          label: 'Tên môn học',
+                          hintText: 'VD: UX/UI Design',
+                          validator: (String? value) => value == null || value.trim().isEmpty ? 'Nhập tên môn học.' : null,
                         ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 14),
+                        Row(
                           children: <Widget>[
-                            Text(_nameController.text.isEmpty ? 'Tên môn học' : _nameController.text),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_codeController.text.isEmpty ? 'CODE' : _codeController.text} • ${_creditsController.text.isEmpty ? '3' : _creditsController.text} tín chỉ',
-                              style: Theme.of(context).textTheme.bodyMedium,
+                            Expanded(
+                              child: StudyFlowInput(
+                                controller: _codeController,
+                                label: 'Mã môn',
+                                hintText: 'VD: CS401',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: StudyFlowInput(
+                                controller: _creditsController,
+                                label: 'Số tín chỉ',
+                                keyboardType: TextInputType.number,
+                                validator: (String? value) {
+                                  final int? credits = int.tryParse(value ?? '');
+                                  return credits == null || credits <= 0 ? 'Không hợp lệ' : null;
+                                },
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 14),
+                        StudyFlowInput(
+                          controller: _teacherController,
+                          label: 'Giảng viên',
+                          hintText: 'Tên giảng viên',
+                        ),
+                        const SizedBox(height: 14),
+                        StudyFlowInput(
+                          controller: _roomController,
+                          label: 'Phòng',
+                          hintText: 'VD: A1-204',
+                        ),
+                        const SizedBox(height: 14),
+                        StudyFlowInput(
+                          controller: _noteController,
+                          label: 'Ghi chú',
+                          hintText: 'Thêm ghi chú cho môn học',
+                          maxLines: 4,
+                        ),
+                        const SizedBox(height: 20),
+                        Text('Preview', style: Theme.of(context).textTheme.titleSmall),
+                        const SizedBox(height: 10),
+                        StudyFlowSurfaceCard(
+                          child: Row(
+                            children: <Widget>[
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  color: previewColor,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(_nameController.text.isEmpty ? 'Tên môn học' : _nameController.text),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${_codeController.text.isEmpty ? 'CODE' : _codeController.text} • ${_creditsController.text.isEmpty ? '3' : _creditsController.text} tín chỉ',
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                      ],
+                    ),
                   ),
                 ),
-                const Spacer(),
                 if (widget.subjectId != null)
                   Row(
                     children: <Widget>[

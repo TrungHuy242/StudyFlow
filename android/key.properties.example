@@ -1,0 +1,7 @@
+# Copy this file to android/key.properties and replace the values with your own release key settings.
+# Do not check android/key.properties into version control.
+
+storeFile=release-keystore.jks
+storePassword=your-store-password
+keyAlias=your-key-alias
+keyPassword=your-key-password

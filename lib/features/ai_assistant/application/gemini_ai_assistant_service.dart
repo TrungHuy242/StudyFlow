@@ -329,12 +329,12 @@ class GeminiAiAssistantService extends AiAssistantService {
   String _cleanupResponse(String text) {
     // Remove excessive newlines but preserve intentional paragraph breaks
     String cleaned = text.replaceAll(RegExp(r'\n{3,}'), '\n\n');
-    
+
     // Fix common Vietnamese text formatting issues
-    cleaned = cleaned.replaceAll('( +)', ' ');  // Multiple spaces to one
-    cleaned = cleaned.replaceAll(' ([,.])', r'$1');  // Space before punctuation
-    cleaned = cleaned.replaceAll(':\n+', ': ');  // Fix colons
-    
+    cleaned = cleaned.replaceAll('( +)', ' '); // Multiple spaces to one
+    cleaned = cleaned.replaceAll(' ([,.])', r'$1'); // Space before punctuation
+    cleaned = cleaned.replaceAll(':\n+', ': '); // Fix colons
+
     return cleaned.trim();
   }
 

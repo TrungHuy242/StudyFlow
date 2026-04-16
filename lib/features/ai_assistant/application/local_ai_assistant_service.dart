@@ -80,8 +80,7 @@ class LocalAiAssistantService extends AiAssistantService {
     if (schedules.isNotEmpty) {
       lines.add('Ngày mai bạn có ${schedules.length} lịch học:');
       for (final ScheduleModel item in schedules) {
-        final String room =
-            item.room.isEmpty ? '' : ' tại ${item.room}';
+        final String room = item.room.isEmpty ? '' : ' tại ${item.room}';
         lines.add(
             '• ${_subjectLabel(item.subjectName)} lúc ${item.timeRange}$room');
       }
@@ -91,8 +90,7 @@ class LocalAiAssistantService extends AiAssistantService {
       if (schedules.isNotEmpty) lines.add('');
       lines.add('Kế hoạch học ngày mai:');
       for (final StudyPlanModel item in plans.take(3)) {
-        final String topic =
-            item.topic.isEmpty ? '' : ' - ${item.topic}';
+        final String topic = item.topic.isEmpty ? '' : ' - ${item.topic}';
         lines.add('• ${item.title} (${_subjectLabel(item.subjectName)})$topic');
       }
     }
@@ -171,7 +169,8 @@ class LocalAiAssistantService extends AiAssistantService {
     for (int index = 0; index < blockCount; index++) {
       final _SubjectUrgency target = ranked[index % ranked.length];
       final String priorityLabel = index == 0 ? '🔴 Ưu tiên' : '🟠 Tiếp theo';
-      lines.add('$priorityLabel: ${target.subject} (${context.focusDurationMinutes} phút)');
+      lines.add(
+          '$priorityLabel: ${target.subject} (${context.focusDurationMinutes} phút)');
     }
 
     final List<ScheduleModel> tomorrowSchedule = context
@@ -275,8 +274,7 @@ class LocalAiAssistantService extends AiAssistantService {
       }
 
       if (ranked.length > 1) {
-        lines.add(
-            '\nSau đó là ${ranked[1].subject} cũng cần chú ý.');
+        lines.add('\nSau đó là ${ranked[1].subject} cũng cần chú ý.');
       }
 
       return lines.join('\n');
