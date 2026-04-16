@@ -52,32 +52,64 @@ void main() async {
   );
 }
 
-class StudyFlowBootstrap extends StatelessWidget {
-  StudyFlowBootstrap({
+class StudyFlowBootstrap extends StatefulWidget {
+  const StudyFlowBootstrap({
     super.key,
     required this.appRefreshNotifier,
     required this.notificationSyncService,
     required this.userSettingsRepository,
     required this.sessionController,
-  }) : _appRouter = AppRouter(sessionController);
+  });
 
   final AppRefreshNotifier appRefreshNotifier;
   final NotificationSyncService notificationSyncService;
   final UserSettingsRepository userSettingsRepository;
   final AppSessionController sessionController;
-  final AppRouter _appRouter;
+
+  @override
+  State<StudyFlowBootstrap> createState() => _StudyFlowBootstrapState();
+}
+
+class _StudyFlowBootstrapState extends State<StudyFlowBootstrap> {
+  late AppRouter _appRouter;
+
+  @override
+  void initState() {
+    super.initState();
+    _appRouter = AppRouter(widget.sessionController);
+  }
+
+  @override
+  void didUpdateWidget(covariant StudyFlowBootstrap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.sessionController, widget.sessionController)) {
+      _appRouter = AppRouter(widget.sessionController);
+    }
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    _appRouter = AppRouter(widget.sessionController);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         Provider<DatabaseService>.value(value: DatabaseService.instance),
-        Provider<UserSettingsRepository>.value(value: userSettingsRepository),
-        Provider<NotificationSyncService>.value(value: notificationSyncService),
+        Provider<UserSettingsRepository>.value(
+          value: widget.userSettingsRepository,
+        ),
+        Provider<NotificationSyncService>.value(
+          value: widget.notificationSyncService,
+        ),
         ChangeNotifierProvider<AppRefreshNotifier>.value(
-            value: appRefreshNotifier),
+          value: widget.appRefreshNotifier,
+        ),
         ChangeNotifierProvider<AppSessionController>.value(
-            value: sessionController),
+          value: widget.sessionController,
+        ),
       ],
       child: Consumer<AppSessionController>(
         builder: (BuildContext context, AppSessionController session, _) {

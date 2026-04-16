@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:supabase/supabase.dart';
 
 Future<void> main() async {
-  final Map<String, String> env = _readEnv(File('${Directory.current.path}/.env'));
+  final Map<String, String> env =
+      _readEnv(File('${Directory.current.path}/.env'));
   final String? supabaseUrl = env['SUPABASE_URL'];
   final String? publishableKey = env['SUPABASE_PUBLISHABLE_KEY'];
   if (supabaseUrl == null || supabaseUrl.trim().isEmpty) {
@@ -33,6 +34,8 @@ Future<void> main() async {
     'notes',
     'notifications',
     'user_settings',
+    'ai_chat_threads',
+    'ai_chat_messages',
   ];
 
   for (final String table in tables) {

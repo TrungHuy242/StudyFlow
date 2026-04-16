@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/analytics/presentation/analytics_page.dart';
+import '../../features/ai_assistant/presentation/ai_assistant_page.dart';
 import '../../features/app_shell/app_shell.dart';
 import '../../features/auth/application/app_session_controller.dart';
 import '../../features/auth/presentation/auth_flow_payloads.dart';
@@ -31,8 +32,10 @@ class AppRouter {
   AppRouter(this._sessionController);
 
   final AppSessionController _sessionController;
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   late final GoRouter router = GoRouter(
+    navigatorKey: navigatorKey,
     initialLocation: '/',
     refreshListenable: _sessionController,
     redirect: (BuildContext context, GoRouterState state) {
@@ -75,7 +78,8 @@ class AppRouter {
       GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
       GoRoute(
         path: '/verify-email',
-        builder: (_, GoRouterState state) => OtpVerificationPage(payload: state.extra),
+        builder: (_, GoRouterState state) =>
+            OtpVerificationPage(payload: state.extra),
       ),
       GoRoute(
         path: '/forgot-password',
@@ -104,22 +108,28 @@ class AppRouter {
           ),
           StatefulShellBranch(
             routes: <RouteBase>[
-              GoRoute(path: '/calendar', builder: (_, __) => const SchedulePage()),
+              GoRoute(
+                  path: '/calendar', builder: (_, __) => const SchedulePage()),
             ],
           ),
           StatefulShellBranch(
             routes: <RouteBase>[
-              GoRoute(path: '/deadlines', builder: (_, __) => const DeadlinesPage()),
+              GoRoute(
+                  path: '/deadlines',
+                  builder: (_, __) => const DeadlinesPage()),
             ],
           ),
           StatefulShellBranch(
             routes: <RouteBase>[
-              GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsPage()),
+              GoRoute(
+                  path: '/analytics',
+                  builder: (_, __) => const AnalyticsPage()),
             ],
           ),
           StatefulShellBranch(
             routes: <RouteBase>[
-              GoRoute(path: '/profile', builder: (_, __) => const ProfilePage()),
+              GoRoute(
+                  path: '/profile', builder: (_, __) => const ProfilePage()),
             ],
           ),
         ],
@@ -127,39 +137,50 @@ class AppRouter {
       GoRoute(path: '/semester', builder: (_, __) => const SemesterPage()),
       GoRoute(path: '/subjects', builder: (_, __) => const SubjectsPage()),
       GoRoute(path: '/study-plan', builder: (_, __) => const StudyPlanPage()),
-      GoRoute(path: '/calendar/add', builder: (_, __) => const ScheduleEditorPage()),
+      GoRoute(
+          path: '/calendar/add',
+          builder: (_, __) => const ScheduleEditorPage()),
       GoRoute(
         path: '/calendar/:scheduleId',
         builder: (_, GoRouterState state) {
-          final int scheduleId = int.tryParse(state.pathParameters['scheduleId'] ?? '') ?? 0;
+          final int scheduleId =
+              int.tryParse(state.pathParameters['scheduleId'] ?? '') ?? 0;
           return ScheduleDetailPage(scheduleId: scheduleId);
         },
       ),
       GoRoute(
         path: '/calendar/:scheduleId/edit',
         builder: (_, GoRouterState state) {
-          final int? scheduleId = int.tryParse(state.pathParameters['scheduleId'] ?? '');
+          final int? scheduleId =
+              int.tryParse(state.pathParameters['scheduleId'] ?? '');
           return ScheduleEditorPage(scheduleId: scheduleId);
         },
       ),
-      GoRoute(path: '/subjects/add', builder: (_, __) => const SubjectEditorPage()),
+      GoRoute(
+          path: '/subjects/add', builder: (_, __) => const SubjectEditorPage()),
       GoRoute(
         path: '/subjects/:subjectId',
         builder: (_, GoRouterState state) {
-          final int subjectId = int.tryParse(state.pathParameters['subjectId'] ?? '') ?? 0;
+          final int subjectId =
+              int.tryParse(state.pathParameters['subjectId'] ?? '') ?? 0;
           return SubjectDetailPage(subjectId: subjectId);
         },
       ),
       GoRoute(
         path: '/subjects/:subjectId/edit',
         builder: (_, GoRouterState state) {
-          final int? subjectId = int.tryParse(state.pathParameters['subjectId'] ?? '');
+          final int? subjectId =
+              int.tryParse(state.pathParameters['subjectId'] ?? '');
           return SubjectEditorPage(subjectId: subjectId);
         },
       ),
       GoRoute(path: '/pomodoro', builder: (_, __) => const PomodoroPage()),
       GoRoute(path: '/notes', builder: (_, __) => const NotesPage()),
-      GoRoute(path: '/notifications', builder: (_, __) => const NotificationsPage()),
+      GoRoute(
+          path: '/notifications',
+          builder: (_, __) => const NotificationsPage()),
+      GoRoute(
+          path: '/ai-assistant', builder: (_, __) => const AiAssistantPage()),
     ],
   );
 }

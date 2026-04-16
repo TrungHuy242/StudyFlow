@@ -19,6 +19,16 @@ class AppEnv {
 
   static String? get supabaseDbUrl => dotenv.maybeGet('SUPABASE_DB_URL');
 
+  static String get geminiApiKey => _required('GEMINI_API_KEY');
+
+  static String get geminiModel {
+    final String? value = dotenv.maybeGet('GEMINI_MODEL');
+    if (value == null || value.trim().isEmpty) {
+      return 'gemini-2.5-flash';
+    }
+    return value.trim();
+  }
+
   static String _required(String key) {
     final String? value = dotenv.maybeGet(key);
     if (value == null || value.trim().isEmpty) {

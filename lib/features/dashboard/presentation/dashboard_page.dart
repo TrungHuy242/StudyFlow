@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables, unused_element_parameter
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -155,25 +155,24 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: FutureBuilder<_DashboardData>(
-        future: _future,
-        builder:
-            (BuildContext context, AsyncSnapshot<_DashboardData> snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final _DashboardData data = snapshot.data ?? const _DashboardData();
-          if (data.showEmpty) {
-            return _DashboardEmpty(onSetup: () => context.push('/semester'));
-          }
-          if (data.goalReached) {
-            return _DashboardGoal(
-              focusMinutesToday: data.focusMinutesToday,
-              onAnalytics: () => context.push('/analytics'),
-            );
-          }
-          return RefreshIndicator(
+    return FutureBuilder<_DashboardData>(
+      future: _future,
+      builder: (BuildContext context, AsyncSnapshot<_DashboardData> snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final _DashboardData data = snapshot.data ?? const _DashboardData();
+        if (data.showEmpty) {
+          return _DashboardEmpty(onSetup: () => context.push('/semester'));
+        }
+        if (data.goalReached) {
+          return _DashboardGoal(
+            focusMinutesToday: data.focusMinutesToday,
+            onAnalytics: () => context.push('/analytics'),
+          );
+        }
+        return Scaffold(
+          body: RefreshIndicator(
             onRefresh: _refresh,
             child: ListView(
               padding: EdgeInsets.zero,
@@ -285,6 +284,14 @@ class _DashboardPageState extends State<DashboardPage> {
                         subtitle: 'Mở Notes để lưu ý nhanh',
                         onTap: () => context.push('/notes'),
                       ),
+                      const SizedBox(height: 12),
+                      _QuickActionCard(
+                        icon: Icons.smart_toy_rounded,
+                        color: StudyFlowPalette.green,
+                        title: 'Trợ lý học tập AI',
+                        subtitle: 'Hỏi nhanh về ưu tiên và tiến độ',
+                        onTap: () => context.push('/ai-assistant'),
+                      ),
                       const SizedBox(height: 20),
                       const _SectionTitle('Tiến độ môn học',
                           route: '/subjects'),
@@ -308,9 +315,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -683,14 +690,19 @@ class _MessageCard extends StatelessWidget {
 }
 
 class _DashboardEmpty extends StatelessWidget {
-  const _DashboardEmpty({required this.onSetup});
+  const _DashboardEmpty({
+    required this.onSetup,
+    this.floatingActionButton,
+  });
 
   final VoidCallback onSetup;
+  final Widget? floatingActionButton;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      floatingActionButton: floatingActionButton,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(22, 56, 22, 20),
@@ -754,15 +766,18 @@ class _DashboardGoal extends StatelessWidget {
   const _DashboardGoal({
     required this.focusMinutesToday,
     required this.onAnalytics,
+    this.floatingActionButton,
   });
 
   final int focusMinutesToday;
   final VoidCallback onAnalytics;
+  final Widget? floatingActionButton;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: StudyFlowPalette.backgroundWarm,
+      floatingActionButton: floatingActionButton,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(22, 48, 22, 24),
