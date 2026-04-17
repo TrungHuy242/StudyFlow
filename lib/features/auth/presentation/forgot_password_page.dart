@@ -6,6 +6,10 @@ import '../../../shared/widgets/studyflow_components.dart';
 import '../application/app_session_controller.dart';
 import 'widgets/auth_scaffold.dart';
 
+/// Trang "Quên mật khẩu" (Forgot Password)
+///
+/// Cho phép người dùng nhập email để nhận mã đặt lại mật khẩu.
+/// Sử dụng AuthScaffold để giữ giao diện thống nhất với các màn hình auth khác.
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
 
@@ -14,8 +18,14 @@ class ForgotPasswordPage extends StatefulWidget {
 }
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  
+  // Key để quản lý trạng thái Form (validate)
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  
+  // Controller cho trường nhập email
   final TextEditingController _emailController = TextEditingController();
+  
+  // Trạng thái đang gửi yêu cầu (để disable button và hiển thị loading)
   bool _submitting = false;
 
   @override
@@ -24,36 +34,45 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     super.dispose();
   }
 
+  /// Xử lý sự kiện khi người dùng nhấn nút "Send verification code"
   Future<void> _continue() async {
+    // Kiểm tra form có hợp lệ không
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
+    // Bắt đầu trạng thái loading
     setState(() {
       _submitting = true;
     });
 
     try {
+      // Gọi controller để gửi yêu cầu đặt lại mật khẩu
       await context.read<AppSessionController>().requestPasswordReset(
             email: _emailController.text.trim(),
           );
-      if (!mounted) {
-        return;
-      }
+
+      if (!mounted) return;
+
+      // Hiển thị thông báo thành công
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Email đặt lại mật khẩu đã được gửi.'),
         ),
       );
+
+      // Quay về trang Login sau khi gửi email thành công
       context.go('/login');
+      
     } on FormatException catch (error) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
+
+      // Hiển thị lỗi từ server hoặc validation
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.message)),
       );
     } finally {
+      // Luôn tắt trạng thái loading dù thành công hay thất bại
       if (mounted) {
         setState(() {
           _submitting = false;
@@ -67,11 +86,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return AuthScaffold(
       title: 'Forgot password?',
       subtitle: 'Enter your email to recover access to your local account.',
-      onBack: () => context.pop(),
+      onBack: () => context.pop(),        // Nút quay lại
       body: Form(
         key: _formKey,
         child: Column(
           children: <Widget>[
+            // Trường nhập email
             StudyFlowInput(
               controller: _emailController,
               label: 'Email',
@@ -86,13 +106,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               },
             ),
             const SizedBox(height: 28),
+
+            // Nút gửi mã xác thực
             StudyFlowGradientButton(
               label: _submitting ? 'Đang gửi...' : 'Send verification code',
-              onTap: _submitting ? null : _continue,
+              onTap: _submitting ? null : _continue,   // Disable khi đang submitting
             ),
           ],
         ),
       ),
+      // Phần footer với link quay về đăng nhập
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[

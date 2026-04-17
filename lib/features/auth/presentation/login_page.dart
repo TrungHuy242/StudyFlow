@@ -7,6 +7,10 @@ import '../../../shared/widgets/studyflow_components.dart';
 import '../application/app_session_controller.dart';
 import 'widgets/auth_scaffold.dart';
 
+/// Trang Đăng nhập (Login Page)
+///
+/// Đây là màn hình chính để người dùng đăng nhập vào ứng dụng.
+/// Sử dụng AuthScaffold để giữ giao diện thống nhất với các màn hình xác thực khác.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -15,10 +19,18 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  
+  // Key quản lý trạng thái Form (dùng để validate)
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  
+  // Controller cho hai trường nhập liệu
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  
+  // Trạng thái ẩn/hiện mật khẩu
   bool _obscurePassword = true;
+  
+  // Trạng thái đang xử lý đăng nhập (để disable button và hiển thị loading)
   bool _submitting = false;
 
   @override
@@ -28,30 +40,41 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  /// Xử lý logic đăng nhập khi người dùng nhấn nút "Đăng nhập"
   Future<void> _submit() async {
+    // Kiểm tra form có hợp lệ không
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     final AppSessionController session = context.read<AppSessionController>();
+
+    // Bắt đầu trạng thái loading
     setState(() {
       _submitting = true;
     });
+
     try {
+      // Gọi hàm login từ AppSessionController
       await session.login(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      if (!mounted) {
-        return;
-      }
+
+      if (!mounted) return;
+
+      // Đăng nhập thành công → chuyển hướng về trang chủ
       context.go('/home');
+      
     } on FormatException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      if (!mounted) return;
+
+      // Hiển thị lỗi từ server (ví dụ: sai email/mật khẩu)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
     } finally {
+      // Luôn tắt trạng thái loading dù thành công hay thất bại
       if (mounted) {
         setState(() {
           _submitting = false;
@@ -60,6 +83,8 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  /// Hiển thị thông báo placeholder cho chức năng đăng nhập bằng mạng xã hội
+  /// (Hiện tại chỉ là demo, sẽ triển khai thật ở phiên bản sau)
   void _showPlaceholderSocialLogin(String provider) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$provider sẽ được kết nối ở bản sau.')),
@@ -76,6 +101,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            // Trường nhập Email
             StudyFlowInput(
               controller: _emailController,
               label: 'Email',
@@ -91,6 +117,8 @@ class _LoginPageState extends State<LoginPage> {
               },
             ),
             const SizedBox(height: 18),
+
+            // Trường nhập Mật khẩu
             StudyFlowInput(
               controller: _passwordController,
               label: 'Mật khẩu',
@@ -112,6 +140,8 @@ class _LoginPageState extends State<LoginPage> {
                 return null;
               },
             ),
+
+            // Link "Quên mật khẩu?"
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -120,11 +150,15 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const SizedBox(height: 12),
+
+            // Nút Đăng nhập chính
             StudyFlowGradientButton(
               label: _submitting ? 'Đang đăng nhập...' : 'Đăng nhập',
-              onTap: _submitting ? null : _submit,
+              onTap: _submitting ? null : _submit,   // Disable nút khi đang xử lý
             ),
             const SizedBox(height: 28),
+
+            // Phân cách "Hoặc đăng nhập với"
             Row(
               children: <Widget>[
                 const Expanded(child: Divider(color: StudyFlowPalette.border)),
@@ -139,6 +173,8 @@ class _LoginPageState extends State<LoginPage> {
               ],
             ),
             const SizedBox(height: 20),
+
+            // Hai nút đăng nhập bằng Google và GitHub (chưa triển khai thật)
             Row(
               children: <Widget>[
                 Expanded(
@@ -163,6 +199,7 @@ class _LoginPageState extends State<LoginPage> {
           ],
         ),
       ),
+      // Phần footer: Link chuyển sang trang Đăng ký
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
