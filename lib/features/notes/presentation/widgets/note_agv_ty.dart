@@ -11,7 +11,7 @@ class User {
   }
 
   void _checkLevelUp() {
-    if (points >= level * 100) {
+    while (points >= level * 100) {
       level++;
       print("🎉 Level up! Bạn đã lên level $level");
     }
@@ -30,6 +30,6 @@ void main() {
   user.addPoints(50);
   user.showInfo();
 
-  user.addPoints(60); // sẽ level up
+  user.addPoints(160); // test lên nhiều level
   user.showInfo();
 }
